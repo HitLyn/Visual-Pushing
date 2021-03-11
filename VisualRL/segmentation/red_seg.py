@@ -13,7 +13,9 @@ light_red = (0, 150, 0)
 bright_red = (20, 255, 255)
 mask = cv2.inRange(test, light_red, bright_red)
 result = cv2.bitwise_and(test, test, mask=mask)
-cv2.imwrite("0002.png", mask)
+crop_mask = mask[200:, 100:400]
+crop_mask = cv2.resize(crop_mask, (78, 78))
+cv2.imwrite("0002.png", crop_mask)
 
-plt.imshow(mask)
+plt.imshow(crop_mask)
 plt.show()

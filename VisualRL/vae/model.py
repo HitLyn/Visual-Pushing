@@ -20,4 +20,5 @@ class ConvBlock(nn.Module):
     def forward(self, x):
         return self.op(x)
 
+transformer = transforms.Compose([transforms.ToTensor()])
 
