@@ -5,3 +5,12 @@ images/
 
 ## logs
 .idea/
+
+## packaging
+build/
+develog-eggs/
+.eggs/
+eggs/
+*.egg
+*.egg-info/
+
