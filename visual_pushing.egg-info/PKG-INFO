@@ -1,0 +1,11 @@
+Metadata-Version: 1.0
+Name: visual-pushing
+Version: 0.0.1
+Summary: pushing object based on visual information
+Home-page: https://tams.informatik.uni-hamburg.de/
+Author: Lin Cong
+Author-email: cong@informatik.uni-hamburg.de
+License: MIT License
+Description: UNKNOWN
+Keywords: grasping,deep-reinforcement-learning
+Platform: any

@@ -1,0 +1,11 @@
+README.md
+setup.py
+VisualRL/__init__.py
+VisualRL/segmentation/__init__.py
+VisualRL/segmentation/red_seg.py
+VisualRL/vae/__init__.py
+VisualRL/vae/vae.py
+visual_pushing.egg-info/PKG-INFO
+visual_pushing.egg-info/SOURCES.txt
+visual_pushing.egg-info/dependency_links.txt
+visual_pushing.egg-info/top_level.txt
