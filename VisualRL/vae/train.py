@@ -70,13 +70,23 @@ def main():
                 loss, bce, kld = loss_fn(test_recon, test_image, mu, logvar)
                 
             print("TEST Epoch[{}/{}] Loss: {:.3f} {:.3f} {:.3f}".format(epoch + 1, args.epochs, loss.item()/args.batch_size, bce.item()/args.batch_size, kld.item()/args.batch_size))
-            # save the testing results
 
+        # save the testing results
+        image_sample = image[0]
+        image_recon_sample = image_recon[0]
+        test_sample = test_image[0]
+        test_recon_sample = test_recon[0]
+        saved_image = torch.stack([image_sample, image_recon_sample,
+                                    test_sample, test_recon_sample])
+        file_name = "epoch_{}.png".format(epoch + 1)
+        torchvision.utils.save_image(saved_image, os.path.join(images_path, file_name), nrow = 3)
 
         # save model
         model.save(model_path, epoch)
 
 
+if __name__ == '__main__':
+    main()
 
 
             
