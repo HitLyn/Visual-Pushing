@@ -1,0 +1,90 @@
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
+import torchvision
+import torchvision.transforms as transforms
+
+import numpy as np
+import argparse
+import os
+
+from VisualRL.common.utils import get_device, create_path_for_results
+from VisualRL.vae.model import VAE
+from VisualRL.vae.dataset import VaeImageDataset
+
+
+DATA_SET_PATH = os.path.join(os.environ["VISUAL_PUSHING_HOME"], "image/mask")
+RESULTS_SAVE_PATH = os.path.join(os.environ["VISUAL_PUSHING_HOME"], "results/vae")
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--batch-size', type = int, default = 64)
+parser.add_argument('--epochs', type = int, default = 20)
+parser.add_argument('--seed', type = int, default = 1)
+parser.add_argument('--eval_freq', type = int, default = 10)
+parser.add_argument('--device', type = str, default = 'auto')
+args = parser.parse_args()
+
+def loss_fn(recon_x, x, mu, logvar):
+    BCE = F.binary_cross_entropy(recon_x, x, size_average=False)
+    KLD = -0.5 * torch.mean(1 + logvar - mu.pow(2) - logvar.exp())
+
+    return BCE + KLD, BCE, KLD
+
+
+def main():
+    torch.manual_seed(args.seed)
+    
+    device = get_device(args.device)
+    
+    kwargs = {'num_workers': 1, 'pin_memory': True}
+    # load data
+    transform  = transforms.Compose([transforms.Resize(64), transforms.ToTensor()])
+    train_dataset = VaeImageDataset(base_path = DATA_SET_PATH, split = True, transform = transform)
+    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size = args.batch_size, shuffle = True, pin_memory = False, num_workers = 2)
+    test_dataset = VaeImageDataset(base_path = DATA_SET_PATH, train = False, split = True, transform = transform)
+    test_loader = torch.utils.data.DataLoader(test_dataset, batch_size = args.batch_size, shuffle = True, pin_memory = False, num_workers = 2)
+    print('\nall data loader! \n')
+    # load model
+    model = VAE().to(device)
+    optimizer = optim.Adam(model.parameters())
+    criterion = nn.MSELoss()
+    
+    # train
+    images_path, model_path = create_path_for_results(RESULTS_SAVE_PATH, image = True, model = True)
+    for epoch in range(args.epochs):
+        train_loss = 0
+        for batch_id, image in enumerate(train_loader):
+            image = image.to(device)
+            image_recon, z, mu, logvar = model(image)
+            loss, bce, kld = loss_fn(image_recon, image, mu, logvar)
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            print("Epoch[{}/{}] Loss: {:.3f} {:.3f} {:.3f}".format(epoch + 1, args.epochs, loss.item()/args.batch_size, bce.item()/args.batch_size, kld.item()/args.batch_size))
+        # test
+        with torch.no_grad():
+            for batch_id, test_image, in enumerate(test_loader):
+                test_image = test_image.to(device)
+                test_recon, z, mu, logvar = model(test_image)
+                loss, bce, kld = loss_fn(test_recon, test_image, mu, logvar)
+                
+            print("TEST Epoch[{}/{}] Loss: {:.3f} {:.3f} {:.3f}".format(epoch + 1, args.epochs, loss.item()/args.batch_size, bce.item()/args.batch_size, kld.item()/args.batch_size))
+            # save the testing results
+
+
+        # save model
+        model.save(model_path, epoch)
+
+
+
+
+            
+
+
+
+
+
+
+
+
