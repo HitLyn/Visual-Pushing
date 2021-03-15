@@ -10,7 +10,7 @@ def image_loader(path):
     return Image.open(path).convert('RGB')
 
 class VaeImageDataset(Dataset):
-    def __init__(self, base_path, n_samples = 5e3, train = True, split = False, transform = None, loader = image_loader):
+    def __init__(self, base_path, n_samples = 1e4, train = True, split = False, transform = None, loader = image_loader):
         """
             base_path: path/to/generated_images, which can get the full path: path/to/generated_images
             n_samples: how many samples are there in the training set
@@ -29,17 +29,17 @@ class VaeImageDataset(Dataset):
         if self.split:
             # get image starting idx
             if self.train:
-                starting_idx = 1
+                starting_idx = 0
             else:
-                starting_idx = int(0.8*self.n_samples + 1)
+                starting_idx = int(0.8*self.n_samples)
         else:
-            starting_idx = 1
+            starting_idx = 0
 
         file_name = "{:05d}.png".format(index + starting_idx)
         image = self.loader(os.path.join(self.base_path, file_name))
         if self.transform is not None:
             image = self.transform(image)
-        return image 
+        return image
 
     def __len__(self):
         if self.split:

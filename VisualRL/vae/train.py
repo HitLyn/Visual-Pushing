@@ -14,12 +14,12 @@ from VisualRL.vae.model import VAE
 from VisualRL.vae.dataset import VaeImageDataset
 
 
-DATA_SET_PATH = os.path.join(os.environ["VISUAL_PUSHING_HOME"], "image/mask")
+DATA_SET_PATH = os.path.join(os.environ["VISUAL_PUSHING_HOME"], "images/masks")
 RESULTS_SAVE_PATH = os.path.join(os.environ["VISUAL_PUSHING_HOME"], "results/vae")
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--batch-size', type = int, default = 64)
-parser.add_argument('--epochs', type = int, default = 20)
+parser.add_argument('--epochs', type = int, default = 60)
 parser.add_argument('--seed', type = int, default = 1)
 parser.add_argument('--eval_freq', type = int, default = 10)
 parser.add_argument('--device', type = str, default = 'auto')
@@ -34,9 +34,9 @@ def loss_fn(recon_x, x, mu, logvar):
 
 def main():
     torch.manual_seed(args.seed)
-    
+
     device = get_device(args.device)
-    
+
     kwargs = {'num_workers': 1, 'pin_memory': True}
     # load data
     transform  = transforms.Compose([transforms.Resize(64), transforms.ToTensor()])
@@ -46,10 +46,10 @@ def main():
     test_loader = torch.utils.data.DataLoader(test_dataset, batch_size = args.batch_size, shuffle = True, pin_memory = False, num_workers = 2)
     print('\nall data loader! \n')
     # load model
-    model = VAE().to(device)
+    model = VAE(device)
     optimizer = optim.Adam(model.parameters())
     criterion = nn.MSELoss()
-    
+
     # train
     images_path, model_path = create_path_for_results(RESULTS_SAVE_PATH, image = True, model = True)
     for epoch in range(args.epochs):
@@ -68,7 +68,7 @@ def main():
                 test_image = test_image.to(device)
                 test_recon, z, mu, logvar = model(test_image)
                 loss, bce, kld = loss_fn(test_recon, test_image, mu, logvar)
-                
+
             print("TEST Epoch[{}/{}] Loss: {:.3f} {:.3f} {:.3f}".format(epoch + 1, args.epochs, loss.item()/args.batch_size, bce.item()/args.batch_size, kld.item()/args.batch_size))
 
         # save the testing results
@@ -79,7 +79,7 @@ def main():
         saved_image = torch.stack([image_sample, image_recon_sample,
                                     test_sample, test_recon_sample])
         file_name = "epoch_{}.png".format(epoch + 1)
-        torchvision.utils.save_image(saved_image, os.path.join(images_path, file_name), nrow = 3)
+        torchvision.utils.save_image(saved_image, os.path.join(images_path, file_name), nrow = 2)
 
         # save model
         model.save(model_path, epoch)
@@ -89,7 +89,7 @@ if __name__ == '__main__':
     main()
 
 
-            
+
 
 
 

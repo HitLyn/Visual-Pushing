@@ -3,10 +3,10 @@ import matplotlib.pyplot as plt
 import os
 import numpy as np
 
-IMAGE_PATH = "/homeL/cong/dataset/"
-SAVE_PATH = "/homeL/cong/dataset/"
+IMAGE_PATH = "/homeL/cong/HitLyn/Visual-Pushing/images/red_original"
+SAVE_PATH = "/homeL/cong/HitLyn/Visual-Pushing/images/masks"
 
-for i in range(1000):
+for i in range(10000):
     file_name = os.path.join(IMAGE_PATH, "{:0>5d}.png".format(i))
     image = cv2.imread(file_name)
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)

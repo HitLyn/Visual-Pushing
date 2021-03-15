@@ -6,12 +6,12 @@ import torchvision.transforms as transforms
 
 from VisualRL.vae.dataset import VaeImageDataset
 
-kwargs = {"num_workers": 1, "pin_memory": True}
-transformer = transforms.Compose([transforms.ToTensor()])
-train_dataset = VaeImageDataset(DATA_PATH, train = True, split = True)
-test_dataset = VaeImageDataset(DATA_PATH, train = False, split = True)
-train_loader = torch.utils.data.DataLoader(train_dataset, batch_size = 128, shuffle = True, **kwargs)
-test_loader = torch.utils.data.DataLoader(train_dataset, batch_size = 128, shuffle = Ture, **kwargs)
+# kwargs = {"num_workers": 1, "pin_memory": True}
+# transformer = transforms.Compose([transforms.ToTensor()])
+# train_dataset = VaeImageDataset(DATA_PATH, train = True, split = True)
+# test_dataset = VaeImageDataset(DATA_PATH, train = False, split = True)
+# train_loader = torch.utils.data.DataLoader(train_dataset, batch_size = 128, shuffle = True, **kwargs)
+# test_loader = torch.utils.data.DataLoader(train_dataset, batch_size = 128, shuffle = Ture, **kwargs)
 
 
 class Flatten(nn.Module):
@@ -23,8 +23,9 @@ class UnFlatten(nn.Module):
         return input.view(input.size(0), input.size(1), 1, 1)
 
 class VAE(nn.Module):
-    def __init__(self, image_channels = 3, h_dim = 1024, z_dim = 64):
+    def __init__(self, device, image_channels = 3, h_dim = 1024, z_dim = 64):
         super(VAE, self).__init__()
+        self.device = device
         self.encoder = nn.Sequential(
                 nn.Conv2d(image_channels, 32, kernel_size = 4, stride = 2, bias = True),
                 nn.ReLU(),
@@ -49,11 +50,17 @@ class VAE(nn.Module):
                 nn.ReLU(),
                 nn.ConvTranspose2d(16, image_channels, kernel_size = 6, stride = 2, bias = True),
                 nn.Sigmoid(),)
-        
+
+        self.encoder.to(self.device)
+        self.fc1.to(self.device)
+        self.fc2.to(self.device)
+        self.fc3.to(self.device)
+        self.decoder.to(self.device)
+
     def reparmeterize(self, mu, logvar):
         std = logvar.mul(0.5).exp_()
-        esp = torch.randn(*mu.size())
-        z = mu + std*exp
+        esp = torch.randn(*mu.size()).to(self.device)
+        z = mu + std*esp
         return z
 
     def bottleneck(self, h):
