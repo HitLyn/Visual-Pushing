@@ -12,6 +12,12 @@ def get_device(device):
         torch.cuda.set_device(int(device))
         return torch.device("cuda")
 
+def set_seed_everywhere(seed):
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed)
+    np.random.seed(seed)
+    random.seed(seed)
 
 def create_path_for_results(PATH, image = True, model = True):
     train_time = time.strftime("%m_%d-%H_%M", time.gmtime())
@@ -28,6 +34,3 @@ def create_path_for_results(PATH, image = True, model = True):
         path.append(model_path)
 
     return path
-
-
-
