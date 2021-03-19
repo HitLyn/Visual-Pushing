@@ -14,12 +14,14 @@ class HER:
             self,
             observation_space,
             action_space,
-            max_episode_steps,
+            goal_space,
             feature_dims,
             normalizer,
             net_class,
             min_action,
             max_action,
+            max_episode_steps,
+            train_freq,
             learning_rate = 3e-4,
             buffer_size = 1e6,
             learning_starts = 100,
@@ -32,6 +34,7 @@ class HER:
 
         self.observation_space = observation_space
         self.action_space = action_space
+        self.goal_space = goal_space
         self.max_episode_steps = max_episode_steps
         self.feature_dims = feature_dims
         self.normalizer = normalizer
@@ -47,8 +50,11 @@ class HER:
         self.device = device
         self.seed = seed
 
+        self.dims = self.get_dims()
+
         self._episode_num = 0
         self.num_timesteps = 0
+        self.train_freq = train_freq
 
         set_seed_everywhere(self.seed)
 
@@ -115,8 +121,77 @@ class HER:
         self._episode_num = 0
         self.num_timesteps = 0
 
-    def collect_rollouts(self):
-        pass
+    def get_dims(self):
+        self.dims = dict()
+        self.dims['observation'] = self.observation_space
+        self.dims['action'] = self.action_space
+        self.dims['goal'] = self.goal_space
+        return self.dims
+
+    def _sample_action(self, observation, achieved_goal, desired_goal):
+        if self.num_collected_episodes < self.learning_starts:
+            scaled_action = np.random.uniform(-1, 1, size = self.dims['action'])
+        else:
+            # reshape and normalize observations for network
+            observation = observation.reshape(-1, self.dims['observation'])
+            desired_goal = desired_goal.reshape(-1, self.dims['goal'])
+            obs_input = np.concatenate([observation, desired_goal], axis = 1)
+            obs_input = self.normalizer.normalize(obs_input)
+            scaled_action = self.policy.predict(obs_input, determinstic = False)
+
+        return scaled_action 
+
+    def collect_rollouts(self, env):
+        episode_rewards, total_timesteps = [], []
+        success_stats = []
+        episode = 0
+        while episode < self.train_freq:
+            obs_dict = env.reset()
+            observation = np.empty(self.dims['observation'], np.float32)
+            achieved_goal = np.empty(self.dims['goal'], np.float32)
+            desired_goal = np.empty(self.dims['goal'], np.float32)
+            observation[:] = obs_dict['observation']
+            achieved_goal[:] = obs_dict['achieved_goal']
+            desired_goal[:] = obs_dict['desired_goal']
+
+            obs, a_goals, acts, d_goals, successes, dones = [], [], [], [], [], []
+            for t in range(self.max_episode_steps):
+                observation_new = np.empty(self.dims['observation'], np.float32)
+                achieved_goal_new = np.empty(self.dims['goal'], np.float32)
+                success = np.zeros(1)
+
+                # step env
+                action= self._sample_action(observation, achieved_goal, desired_goal) # action is squashed to [-1, 1] by tanh function
+                obs_dict_new, reward, done, _ = env.step(ACTION_SCALE*action)
+                observation_new = obs_dict_new['observation']
+                achieved_goal_new = obs_dict_new['achieved_goal']
+                success = np.array(obs_dict_new['is_success'])
+
+                # store transitions
+                dones.append(done)
+                obs.append(observation.copy())
+                a_goals.append(achieved_goal.copy())
+                acts.append(action.copy())
+                d_goals.append(desired_goal.copy())
+                successes.append(success.copy())
+
+                # update states
+                observation[:] = observation_new.copy()
+                achieved_goal[:] = achieved_goal.copy()
+
+            obs.append(observation.copy())
+            a_goals.append(achieved_goal.copy())
+
+            episode_transition = dict(o = obs, u = acts, g = d_goals, ag = a_goals)
+            # stats
+            episode += 1
+            self.num_collected_episodes += 1
+            success_stats.append(successes[-1])
+            success_rate = np.mean(np.array(success_stats))
+            #TODO write success_rate to logger here
+            
+            #TODO add episode_transition to her buffer
+            self.roullout_buffer.add_episode_transition(episode_transition)
 
 
     def learn(self, env, total_timesteps, log_freq, eval_freq, num_eval_episodes):
