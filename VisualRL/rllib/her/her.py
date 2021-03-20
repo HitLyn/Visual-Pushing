@@ -16,12 +16,12 @@ class HER:
             action_space,
             goal_space,
             feature_dims,
-            normalizer,
             net_class,
             min_action,
             max_action,
             max_episode_steps,
             train_freq,
+            train_cycle,
             learning_rate = 3e-4,
             buffer_size = 1e6,
             learning_starts = 100,
@@ -37,7 +37,6 @@ class HER:
         self.goal_space = goal_space
         self.max_episode_steps = max_episode_steps
         self.feature_dims = feature_dims
-        self.normalizer = normalizer
         self.net_class = net_class
         self.learning_rate = learning_rate
         self.min_action = min_action
@@ -55,6 +54,7 @@ class HER:
         self._episode_num = 0
         self.num_timesteps = 0
         self.train_freq = train_freq
+        self.train_cycle = train_cycle
 
         set_seed_everywhere(self.seed)
 
@@ -78,6 +78,7 @@ class HER:
                 observation_space,
                 action_space,
                 self.feature_extractor,
+                self.rollout_buffer,
                 device,
                 min_action,
                 max_action,
@@ -99,27 +100,14 @@ class HER:
         self.critic_target = self.policy.critic_target
         self.critic_scheduler = self.policy.critic_scheduler
 
-    def _update_learning_rate(self, schedulers):
-        if not isinstance(optimizers, list):
-            schedulers = [schedulers]
-        for scheduler in schedulers:
-            scheduler.step()
 
     def to(self, device):
         self.device = device
         self.policy.to(device)
 
-    def train(self, gradient_steps, batch_size):
-        # update learning rate
-        schedulers = [self.actor_scheduler, self.critic_scheduler, self.ent_scheduler]
-        self._update_learning_rate(schedulers)
-
-        # train
-
-
     def _setup_learn(self):
         self._episode_num = 0
-        self.num_timesteps = 0
+        self.num_collected_episodes = 0
 
     def get_dims(self):
         self.dims = dict()
@@ -127,6 +115,12 @@ class HER:
         self.dims['action'] = self.action_space
         self.dims['goal'] = self.goal_space
         return self.dims
+
+    def _select_action(self, observation, achieved_goal, desired_goal):
+        observation = observation.reshape(-1, self.dims['observation'])
+        desired_goal = desired_goal.reshape(-1, self.dims['goal'])
+        obs_input = np.concatenate([observation, desired_goal], axis = 1)
+        scaled_action = self.policy.predict(obs_input, determinstic = True)
 
     def _sample_action(self, observation, achieved_goal, desired_goal):
         if self.num_collected_episodes < self.learning_starts:
@@ -136,13 +130,11 @@ class HER:
             observation = observation.reshape(-1, self.dims['observation'])
             desired_goal = desired_goal.reshape(-1, self.dims['goal'])
             obs_input = np.concatenate([observation, desired_goal], axis = 1)
-            obs_input = self.normalizer.normalize(obs_input)
             scaled_action = self.policy.predict(obs_input, determinstic = False)
 
-        return scaled_action 
+        return scaled_action
 
     def collect_rollouts(self, env):
-        episode_rewards, total_timesteps = [], []
         success_stats = []
         episode = 0
         while episode < self.train_freq:
@@ -189,30 +181,36 @@ class HER:
             success_stats.append(successes[-1])
             success_rate = np.mean(np.array(success_stats))
             #TODO write success_rate to logger here
-            
-            #TODO add episode_transition to her buffer
+
+            # add transition to replay buffer
             self.roullout_buffer.add_episode_transition(episode_transition)
 
 
-    def learn(self, env, total_timesteps, log_freq, eval_freq, num_eval_episodes):
+    def learn(self, env, total_episodes, log_freq, eval_freq, num_eval_episodes):
         # setup model for learning process
         self._setup_learn()
-        # rollout here
-        self.collect_rollouts(self)
-        # train
+        # rollout and train model in turn
+        while self.num_collected_episodes < total_episodes:
+            self.collect_rollouts(env)
+            if self.num_collected_episodes >= self.learning_starts:
+                for i in self.train_cycle:
+                    self.policy.train()
+                if self.num_collected_episodes//eval_freq == 0:
+                    self.eval(env, num_eval_episodes)
 
+    def eval(self, env, num_eval_episodes):
+        reward_stats, success_rate_stats = [], []
+        for episode in range(num_eval_episodes):
+            obs_dict = env.reset()
+            rewards = []
+            for step in range(self.max_episode_steps):
+                action = self._select_action(obs_dict['observation'], obs_dict['achieved_goal'], obs_dict['desired_goal'])
+                obs_dict, reward, done, _ = env.step(ACTION_SCALE*action)
+                rewards.append(reward)
+            success = obs_dict['is_success']
+            reward_stats.append(np.mean(np.array(rewards)))
+            success_rate_stats.append(success)
 
-
-
-
-
-
-
-          
-
-
-
-        
-
-
-
+        mean_reward = np.mean(np.array(reward_stats))
+        mean_success_rate = np.mean(np.array(success_rate_stats))
+        # TODO write stats to logger here
