@@ -25,15 +25,31 @@ class SACPolicy:
         self.max_action = max_action
         self.initial_learning_rate = learning_rate
 
+        # entropy item
+        self.target_entropy = -np.prod(self.action_space.shape).astype(np.float32)
+        self.log_ent_coef = torch.log(torch.ones(1, device = self.device)).requires_grad_(True)
+        self.ent_coef_optimizer = torch.optim.Adam([self.log_ent_coef], lr = 1e-3)
+        self.ent_scheduler = torch.optim.lr_scheduler.ExponentialLR(self.ent_coef_optimizer, 0.999)
+        # build actor and critic
+        self.actor = self.make_actor(feature_extractor = self.feature_exatractor)
+        self.actor.optimizer = torch.optim.Adam(self.actor.parameters(), lr = self.initial_learning_rate)
+        self.actor_scheduler = torch.optim.lr_scheduler.ExponentialLR(self.actor.optimizer, 0.999)
 
-
-
+        self.critic = self.make_critic(feature_extractor = self.feature_extractor)
+        self.critic.optimizer = torch.optim.Adam(self.actor.parameters(), lr = self.initial_learning_rate)
+        self.critic_schedulrt = torch.optim.lr_scheduler.ExponentialLR(self.critic.optimizer, 0.999)
 
     def _update_learning_rate(self, schedulers):
         if not isinstance(optimizers, list):
             schedulers = [schedulers]
         for scheduler in schedulers:
             scheduler.step()
+
+    def make_actor(self, feature_extractor):
+        pass
+
+    def make_critic(self, feature_extractor):
+        pass
 
     def train(self, gradient_steps, batch_size):
         # update learning rate
