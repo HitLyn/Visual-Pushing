@@ -77,6 +77,7 @@ class HER:
         self.policy = SACPolicy(
                 observation_space,
                 action_space,
+                self.feature_dims,
                 self.feature_extractor,
                 self.rollout_buffer,
                 device,

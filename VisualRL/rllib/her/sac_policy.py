@@ -3,11 +3,14 @@ import torch.nn as nn
 
 import numpy as np
 
+from VisualRL.rllib.her.actor import Actor
+
 class SACPolicy:
     def __init__(
             self,
             observation_space,
             action_space,
+            feature_dims,
             feature_exactor,
             rollout_buffer,
             device,
@@ -18,6 +21,7 @@ class SACPolicy:
 
         self.observation_space = observation_space
         self.action_space = action_space
+        self.feature_dims = feature_dims
         self.feature_exactor = feature_exactor
         self.rollout_buffer = rollout_buffer
         self.device = device
@@ -46,7 +50,12 @@ class SACPolicy:
             scheduler.step()
 
     def make_actor(self, feature_extractor):
-        pass
+        actor_kwargs = dict()
+        actor_kwargs["actins_space"] = self.actions_space
+        actor_kwargs["feature_extractor"] = self.feature_extractor
+        actor_kwargs["feature_dims"] self.feature_dims
+
+        return Actor(**actor_kwargs).to(self.device)
 
     def make_critic(self, feature_extractor):
         pass
