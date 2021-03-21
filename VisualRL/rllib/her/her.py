@@ -195,7 +195,7 @@ class HER:
             self.collect_rollouts(env)
             if self.num_collected_episodes >= self.learning_starts:
                 for i in self.train_cycle:
-                    self.policy.train()
+                    self.train()
                 if self.num_collected_episodes//eval_freq == 0:
                     self.eval(env, num_eval_episodes)
 
@@ -215,3 +215,23 @@ class HER:
         mean_reward = np.mean(np.array(reward_stats))
         mean_success_rate = np.mean(np.array(success_rate_stats))
         # TODO write stats to logger here
+
+    def train(self, gradient_steps, batch_size):
+        # update learning rate
+        schedulers = [self.actor_scheduler, self.critic_scheduler, self.ent_scheduler]
+        self._update_learning_rate(schedulers)
+
+        # train
+
+
+    def _update_learning_rate(self, schedulers):
+        if not isinstance(optimizers, list):
+            schedulers = [schedulers]
+        for scheduler in schedulers:
+            scheduler.step()
+
+    def save(self, path, step):
+        torch.save(self.policy.state_dict(), "%s/her_%s.pt" % (path, step))
+
+    def load(self, path, step):
+        self.policy.load_state_dict(torch.load("%s/her_%s.pt" % (path, step))

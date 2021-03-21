@@ -4,8 +4,9 @@ import torch.nn as nn
 import numpy as np
 
 from VisualRL.rllib.her.actor import Actor
+from VisualRL.rllib.her.critic import Critic
 
-class SACPolicy:
+class SACPolicy(nn.Module):
     def __init__(
             self,
             observation_space,
@@ -39,31 +40,35 @@ class SACPolicy:
         self.actor.optimizer = torch.optim.Adam(self.actor.parameters(), lr = self.initial_learning_rate)
         self.actor_scheduler = torch.optim.lr_scheduler.ExponentialLR(self.actor.optimizer, 0.999)
 
-        self.critic = self.make_critic(feature_extractor = self.feature_extractor)
-        self.critic.optimizer = torch.optim.Adam(self.actor.parameters(), lr = self.initial_learning_rate)
+        self.critic, self.critic_parameters = self.make_critic(feature_extractor = self.feature_extractor)
+        self.critic.optimizer = torch.optim.Adam(self.critic_paramters, lr = self.initial_learning_rate)
         self.critic_schedulrt = torch.optim.lr_scheduler.ExponentialLR(self.critic.optimizer, 0.999)
 
-    def _update_learning_rate(self, schedulers):
-        if not isinstance(optimizers, list):
-            schedulers = [schedulers]
-        for scheduler in schedulers:
-            scheduler.step()
+        self.critic_target, _ = self.make_critic()
+        self.critic_target.load_state_dict(self.critic.state_dict())
 
     def make_actor(self, feature_extractor):
         actor_kwargs = dict()
-        actor_kwargs["actins_space"] = self.actions_space
+        actor_kwargs["action_space"] = self.actions_space
         actor_kwargs["feature_extractor"] = self.feature_extractor
         actor_kwargs["feature_dims"] self.feature_dims
 
         return Actor(**actor_kwargs).to(self.device)
 
-    def make_critic(self, feature_extractor):
-        pass
+    def make_critic(self, feature_extractor = None):
+        critic_kwargs = dict()
+        if feature_extractor is None:
+            critic_kwargs["feature_extractor"] = make_feature_extractor("MLP", self.observation_space, self.feature_dims, self.device)
+        else:
+            critic_kwargs["feature_extractor"] = self.feature_extractor
 
-    def train(self, gradient_steps, batch_size):
-        # update learning rate
-        schedulers = [self.actor_scheduler, self.critic_scheduler, self.ent_scheduler]
-        self._update_learning_rate(schedulers)
+        critic_kwargs["observation_space"] = self.observation_space
+        critic_kwargs["action_space"] = self.action_space
+        critic_kwargs["feature_dims"] = self.feature_dims
 
-        # train
+        critic = Critic(**critic_kwargs).to(self.device)
+        critic_parameters = critic.get_parameters()
+
+        return critic, critic_parameters 
+
 
