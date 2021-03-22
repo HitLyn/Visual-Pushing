@@ -1,12 +1,15 @@
 import torch
+import torch.nn as nn
 from torch.nn import functional as F
 from torch.utils.tensorboard import SummaryWritter
 
 import numpy as np
+
 from VisualRL.common.utils import get_device, set_seed_everywhere
 from VisualRL.rllib.common.torch_layers import make_feature_extractor
 from VisualRL.rllib.her.sac_policy import SACPolicy
 from VisualRL.rllib.her.her_replay_buffer import HerReplayBuffer
+from VisualRL.rllin.common.utils import polyak_update
 
 
 class HER:
@@ -22,6 +25,8 @@ class HER:
             max_episode_steps,
             train_freq,
             train_cycle,
+            target_update_interval = 2,
+            gradient_steps = 1,
             learning_rate = 3e-4,
             buffer_size = 1e6,
             learning_starts = 100,
@@ -39,6 +44,7 @@ class HER:
         self.feature_dims = feature_dims
         self.net_class = net_class
         self.learning_rate = learning_rate
+        self.target_update_interval = target_update_interval
         self.min_action = min_action
         self.max_action = max_action
         self.buffer_size = buffer_size
@@ -48,13 +54,15 @@ class HER:
         self.gamma = gamma
         self.device = device
         self.seed = seed
+        self.gradient_steps = gradient_steps
+        self.train_freq = train_freq
+        self.train_cycle = train_cycle
 
         self.dims = self.get_dims()
 
         self._episode_num = 0
         self.num_timesteps = 0
-        self.train_freq = train_freq
-        self.train_cycle = train_cycle
+        self._n_updates = 0
 
         set_seed_everywhere(self.seed)
 
@@ -73,7 +81,6 @@ class HER:
                 device = device
                 )
 
-
         self.policy = SACPolicy(
                 observation_space,
                 action_space,
@@ -85,6 +92,7 @@ class HER:
                 max_action,
                 learning_rate = learning_rate,
                 )
+
         self.policy.to(self.device)
 
         # entropy item
@@ -195,7 +203,7 @@ class HER:
             self.collect_rollouts(env)
             if self.num_collected_episodes >= self.learning_starts:
                 for i in self.train_cycle:
-                    self.train()
+                    self.train(self.gradient_steps, self.batch_size)
                 if self.num_collected_episodes//eval_freq == 0:
                     self.eval(env, num_eval_episodes)
 
@@ -220,8 +228,60 @@ class HER:
         # update learning rate
         schedulers = [self.actor_scheduler, self.critic_scheduler, self.ent_scheduler]
         self._update_learning_rate(schedulers)
-
+        # optimizers
+        optimizers = [self.actor.optimizer, self.critic.optimizer, self.ent_coef_optimizer]
         # train
+        ent_coef_losses, ent_coefs, actor_losses, critic_losses = [], [], [], []
+        for gradient_step in range(gradient_steps):
+            replay_data = self.rollout_buffer.sample(batch_size)
+            actions_pi, log_prob = self.actor.action_log_prob(replay_data.observations)
+            log_prob = log_prob.reshape(-1, 1)
+            ent_coef = torch.exp(self.log_ent_coef.detach())
+            ent_coef_loss = -(self.log_ent_coef*(log_prob + self.target_entropy).detach()).mean()
+            ent_coef_losses.append(ent_coef_loss.item())
+            ent_coefs.append(ent_coef.item())
+            # optimize entropy coefficient
+            self.ent_coef_optimizer.zero_grad()
+            ent_coef_loss.backward()
+            self.ent_coef_optimizer.step()
+
+            with torch.no_grad():
+                # select action according to policy
+                next_actions, next_log_prob = self.actor.action_log_prob(replay_data.next_observations)
+                # compute next Q values
+                next_q_values = torch.cat(self.critic_target(replay_data.next_observations, next_actions), dim = 1)
+                next_q_values, _ = torch.min(next_q_values, dim = 1, keepdim = True)
+                # add entropy term
+                next_q_values = next_q_values - ent_coef*next_log_prob.reshape(-1, 1)
+                # td error, entropy term
+                target_q_values = replay_data.rewards + (1 - replay_data.dones) * self.gamma * next_q_values
+
+            # get current Q values estimates for each critic net
+            current_q_values = self.critic(repaly_data.observations, replay_data.actions)
+            # compute critic loss
+            critic_loss = 0.5*sum([F.mse_loss(current_q, target_q_values) for current_q in current_q_values])
+            critic_losses.append(critic_loss.item())
+            # optimize the critic
+            self.critic.optimizer.zero_grad()
+            critic_loss.backward()
+            self.critic.optimizer.step()
+            # compute actor loss
+            q_values_pi = torch.cat(self.critic(replay_data.observations, actions_pi), dim = 1)
+            min_qf_pi, _ = torch.min(q_values_pi, dim = 1, keepdim = True)
+            actor_loss = (ent_coef*log_prob - min_qf_pi).mean()
+            actor_losses.append(actor_loss.item())
+            # optimize actor
+            self.actor.optimizer.zero_grad()
+            actor_loss.backward()
+            self.actor.optimizer.step()
+
+            # updata target network
+            if gradient_step % self.target_update_interval == 0:
+                polyak_update(self.critic.parameters(), self.critic_target.parameters(), self.tau)
+
+        self._n_updates += gradient_steps
+        # TODO write summary to logger here
+
 
 
     def _update_learning_rate(self, schedulers):
