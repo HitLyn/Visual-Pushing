@@ -70,6 +70,7 @@ class HER:
                 buffer_size,
                 max_episode_steps,
                 observation_space,
+                goal_space,
                 action_space,
                 device,
                 )
@@ -183,7 +184,11 @@ class HER:
             obs.append(observation.copy())
             a_goals.append(achieved_goal.copy())
 
-            episode_transition = dict(o = obs, u = acts, g = d_goals, ag = a_goals)
+            episode_transition = dict(
+                o = np.array(obs).copy(),
+                u = np.array(acts).copy(),
+                g = np.array(d_goals).copy(),
+                ag = np.array(a_goals).copy())
             # stats
             episode += 1
             self.num_collected_episodes += 1
@@ -234,7 +239,7 @@ class HER:
         ent_coef_losses, ent_coefs, actor_losses, critic_losses = [], [], [], []
         for gradient_step in range(gradient_steps):
             replay_data = self.rollout_buffer.sample(batch_size)
-            actions_pi, log_prob = self.actor.action_log_prob(replay_data.observations)
+            actions_pi, log_prob = self.actor.action_log_prob(replay_data["goal_obs_con"])
             log_prob = log_prob.reshape(-1, 1)
             ent_coef = torch.exp(self.log_ent_coef.detach())
             ent_coef_loss = -(self.log_ent_coef*(log_prob + self.target_entropy).detach()).mean()
@@ -247,17 +252,17 @@ class HER:
 
             with torch.no_grad():
                 # select action according to policy
-                next_actions, next_log_prob = self.actor.action_log_prob(replay_data.next_observations)
+                next_actions, next_log_prob = self.actor.action_log_prob(replay_data["next_goal_obs_con"])
                 # compute next Q values
-                next_q_values = torch.cat(self.critic_target(replay_data.next_observations, next_actions), dim = 1)
+                next_q_values = torch.cat(self.critic_target(replay_data["next_goal_obs_con"], next_actions), dim = 1)
                 next_q_values, _ = torch.min(next_q_values, dim = 1, keepdim = True)
                 # add entropy term
                 next_q_values = next_q_values - ent_coef*next_log_prob.reshape(-1, 1)
                 # td error, entropy term
-                target_q_values = replay_data.rewards + (1 - replay_data.dones) * self.gamma * next_q_values
+                target_q_values = replay_data["rewards"] + (1 - replay_data["dones"]) * self.gamma * next_q_values
 
             # get current Q values estimates for each critic net
-            current_q_values = self.critic(repaly_data.observations, replay_data.actions)
+            current_q_values = self.critic(repaly_data.observations, replay_data["actions"])
             # compute critic loss
             critic_loss = 0.5*sum([F.mse_loss(current_q, target_q_values) for current_q in current_q_values])
             critic_losses.append(critic_loss.item())
@@ -266,7 +271,7 @@ class HER:
             critic_loss.backward()
             self.critic.optimizer.step()
             # compute actor loss
-            q_values_pi = torch.cat(self.critic(replay_data.observations, actions_pi), dim = 1)
+            q_values_pi = torch.cat(self.critic(replay_data["goal_obs_con"], actions_pi), dim = 1)
             min_qf_pi, _ = torch.min(q_values_pi, dim = 1, keepdim = True)
             actor_loss = (ent_coef*log_prob - min_qf_pi).mean()
             actor_losses.append(actor_loss.item())
