@@ -57,4 +57,17 @@ def zip_strict(*iterables):
             raise ValueError("Iterables have different lengths")
         yield combo
 
+def set_seed_everywhere(seed):
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed)
+    np.random.seed(seed)
+    random.seed(seed)
 
+
+def get_device(device):
+    if device == 'auto':
+        return torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    else:
+        torch.cuda.set_device(int(device))
+        return torch.device("cuda")

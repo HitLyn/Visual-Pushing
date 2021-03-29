@@ -69,6 +69,7 @@ class SACPolicy(nn.Module):
         critic = Critic(**critic_kwargs).to(self.device)
         critic_parameters = critic.get_parameters()
 
-        return critic, critic_parameters 
+        return critic, critic_parameters
 
-
+    def predict(self, observations, determinstic):
+        return self.actor(observations, determinstic)

@@ -90,4 +90,7 @@ class HerReplayBuffer:
         transitions["goal_obs_con"] = np.concatenate([transitions["obses"], transitions["d_goals"]], axis = 1)
         transitions["next_goal_obs_con"] = np.concatenate([transitions["next_obses"], transitions["d_goals"]], axis = 1)
 
+        for key in transitions.keys():
+            transitions[key] = torch.as_tensor(transitions[key]).float().to(self.device)
+
         return transitions

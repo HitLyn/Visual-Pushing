@@ -11,7 +11,7 @@ from VisualRL.rllib.her.sac_policy import SACPolicy
 from VisualRL.rllib.her.her_replay_buffer import HerReplayBuffer
 from VisualRL.rllin.common.utils import polyak_update
 
-
+ACTION_SCALE = 0.5
 class HER:
     def __init__(
             self,
@@ -19,12 +19,12 @@ class HER:
             action_space,
             goal_space,
             feature_dims,
-            net_class,
             min_action,
             max_action,
             max_episode_steps,
             train_freq,
             train_cycle,
+            net_class = "MLP",
             target_update_interval = 2,
             gradient_steps = 1,
             learning_rate = 3e-4,
@@ -37,9 +37,10 @@ class HER:
             seed = None,
             ):
 
-        self.observation_space = observation_space
+        self.observation_space = observation_space # network size = 15
         self.action_space = action_space
         self.goal_space = goal_space
+        self.buffer_obs_size = observation_space - goal_space # buffer obs shape = 9
         self.max_episode_steps = max_episode_steps
         self.feature_dims = feature_dims
         self.net_class = net_class
@@ -69,7 +70,7 @@ class HER:
         self.rollout_buffer = HerReplayBuffer(
                 buffer_size,
                 max_episode_steps,
-                observation_space,
+                self.buffer_obs_size,
                 goal_space,
                 action_space,
                 device,
@@ -121,25 +122,28 @@ class HER:
 
     def get_dims(self):
         self.dims = dict()
-        self.dims['observation'] = self.observation_space
+        self.dims['observation_space'] = self.observation_space
+        self.dims['buffer_obs_size'] = self.buffer_obs_size
         self.dims['action'] = self.action_space
         self.dims['goal'] = self.goal_space
         return self.dims
 
     def _select_action(self, observation, achieved_goal, desired_goal):
-        observation = observation.reshape(-1, self.dims['observation'])
+        observation = observation.reshape(-1, self.dims['buffer_obs_size'])
         desired_goal = desired_goal.reshape(-1, self.dims['goal'])
         obs_input = np.concatenate([observation, desired_goal], axis = 1)
+        obs_input = torch.as_tensor(obs_input).float().to(self.device)
         scaled_action = self.policy.predict(obs_input, determinstic = True)
 
     def _sample_action(self, observation, achieved_goal, desired_goal):
         if self.num_collected_episodes < self.learning_starts:
-            scaled_action = np.random.uniform(-1, 1, size = self.dims['action'])
+            scaled_action = np.random.uniform(2*self.min_action, 2*self.max_action, size = self.dims['action'])
         else:
             # reshape and normalize observations for network
-            observation = observation.reshape(-1, self.dims['observation'])
+            observation = observation.reshape(-1, self.dims['buffer_obs_size'])
             desired_goal = desired_goal.reshape(-1, self.dims['goal'])
             obs_input = np.concatenate([observation, desired_goal], axis = 1)
+            obs_input = torch.as_tensor(obs_input).float().to(self.device)
             scaled_action = self.policy.predict(obs_input, determinstic = False)
 
         return scaled_action
@@ -149,7 +153,7 @@ class HER:
         episode = 0
         while episode < self.train_freq:
             obs_dict = env.reset()
-            observation = np.empty(self.dims['observation'], np.float32)
+            observation = np.empty(self.dims['buffer_obs_size'], np.float32)
             achieved_goal = np.empty(self.dims['goal'], np.float32)
             desired_goal = np.empty(self.dims['goal'], np.float32)
             observation[:] = obs_dict['observation']
@@ -158,12 +162,12 @@ class HER:
 
             obs, a_goals, acts, d_goals, successes, dones = [], [], [], [], [], []
             for t in range(self.max_episode_steps):
-                observation_new = np.empty(self.dims['observation'], np.float32)
+                observation_new = np.empty(self.dims['buffer_obs_size'], np.float32)
                 achieved_goal_new = np.empty(self.dims['goal'], np.float32)
                 success = np.zeros(1)
 
                 # step env
-                action= self._sample_action(observation, achieved_goal, desired_goal) # action is squashed to [-1, 1] by tanh function
+                action= self._sample_action(observation, achieved_goal, desired_goal).cpu().numpy() # action is squashed to [-1, 1] by tanh function
                 obs_dict_new, reward, done, _ = env.step(ACTION_SCALE*action)
                 observation_new = obs_dict_new['observation']
                 achieved_goal_new = obs_dict_new['achieved_goal']
@@ -200,7 +204,7 @@ class HER:
             self.roullout_buffer.add_episode_transition(episode_transition)
 
 
-    def learn(self, env, total_episodes, log_freq, eval_freq, num_eval_episodes):
+    def learn(self, env, total_episodes, eval_freq, num_eval_episodes, writer, model_path):
         # setup model for learning process
         self._setup_learn()
         # rollout and train model in turn
@@ -208,17 +212,20 @@ class HER:
             self.collect_rollouts(env)
             if self.num_collected_episodes >= self.learning_starts:
                 for i in self.train_cycle:
-                    self.train(self.gradient_steps, self.batch_size)
+                    self.train(self.gradient_steps, self.batch_size, writer)
                 if self.num_collected_episodes//eval_freq == 0:
-                    self.eval(env, num_eval_episodes)
+                    self.eval(env, num_eval_episodes, writer)
+                    # save
+                    self.save(model_path, agent._n_updates)
 
-    def eval(self, env, num_eval_episodes):
+
+    def eval(self, env, num_eval_episodes, wiriter):
         reward_stats, success_rate_stats = [], []
         for episode in range(num_eval_episodes):
             obs_dict = env.reset()
             rewards = []
             for step in range(self.max_episode_steps):
-                action = self._select_action(obs_dict['observation'], obs_dict['achieved_goal'], obs_dict['desired_goal'])
+                action = self._select_action(obs_dict['observation'], obs_dict['achieved_goal'], obs_dict['desired_goal']).cpu().numpy()
                 obs_dict, reward, done, _ = env.step(ACTION_SCALE*action)
                 rewards.append(reward)
             success = obs_dict['is_success']
@@ -228,8 +235,10 @@ class HER:
         mean_reward = np.mean(np.array(reward_stats))
         mean_success_rate = np.mean(np.array(success_rate_stats))
         # TODO write stats to logger here
+        writer.add_scalar("eval/mean_reward", mean_reward, self._n_updates)
+        writer.add_scalar("eval/success_rate", mean_success_rate, self._n_updates)
 
-    def train(self, gradient_steps, batch_size):
+    def train(self, gradient_steps, batch_size, writer):
         # update learning rate
         schedulers = [self.actor_scheduler, self.critic_scheduler, self.ent_scheduler]
         self._update_learning_rate(schedulers)
@@ -262,7 +271,7 @@ class HER:
                 target_q_values = replay_data["rewards"] + (1 - replay_data["dones"]) * self.gamma * next_q_values
 
             # get current Q values estimates for each critic net
-            current_q_values = self.critic(repaly_data.observations, replay_data["actions"])
+            current_q_values = self.critic(replay_data["goal_obs_con"], replay_data["actions"])
             # compute critic loss
             critic_loss = 0.5*sum([F.mse_loss(current_q, target_q_values) for current_q in current_q_values])
             critic_losses.append(critic_loss.item())
@@ -286,7 +295,11 @@ class HER:
 
         self._n_updates += gradient_steps
         # TODO write summary to logger here
-
+        writer.add_scalar("train/ent_coef", np.mean(ent_coefs), self._n_updates)
+        writer.add_scalar("train/actor_loss", np.mean(actor_losses), self._n_updates)
+        writer.add_scalar("train/critic_loss", np.mean(critic_losses), self._n_updates)
+        if len(ent_coef_losses) > 0:
+            writer.add_scalar("train/ent_coef_loss", np.mean(ent_coef_losses), self._n_updates)
 
 
     def _update_learning_rate(self, schedulers):
@@ -299,4 +312,4 @@ class HER:
         torch.save(self.policy.state_dict(), "%s/her_%s.pt" % (path, step))
 
     def load(self, path, step):
-        self.policy.load_state_dict(torch.load("%s/her_%s.pt" % (path, step))
+        self.policy.load_state_dict(torch.load("%s/her_%s.pt" % (path, step)))
