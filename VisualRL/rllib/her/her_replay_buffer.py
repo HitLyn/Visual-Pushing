@@ -1,28 +1,36 @@
 import numpy as np
+from robogym.utils import rotation
+from IPython import embed
+import torch
+import torch.nn as nn
 
 class HerReplayBuffer:
-    def __init__(
+    def __init__(self,
             size_in_transitions,
             episode_steps,
             obs_shape,
             goal_shape,
             action_shape,
-            device):
-
-        self.size = self.size_in_transitions//eipsode_steps
+            device,
+            pos_threshold = 0.02,
+            rot_threshold = 0.15,
+            ):
         self.size_in_transitions = size_in_transitions
+        self.size = int(self.size_in_transitions//episode_steps)
         self.episode_steps = episode_steps
         self.obs_shape = obs_shape
         self.goal_shape = goal_shape
         self.action_shape = action_shape
         self.device = device
+        self.pos_threshold = pos_threshold
+        self.rot_threshold = rot_threshold
 
         # buffer
         self.obses = np.empty([self.size, self.episode_steps + 1, self.obs_shape], np.float32)
         self.a_goals = np.empty([self.size, self.episode_steps + 1, self.goal_shape], np.float32)
         self.d_goals = np.empty([self.size, self.episode_steps, self.goal_shape], np.float32)
-        self.actions = np.empty([self.size, self.episode_steps, self.actions_shape], np.float32)
-        self.dones = np.zeros([self.size, self.episode_stpes])
+        self.actions = np.empty([self.size, self.episode_steps, self.action_shape], np.float32)
+        self.dones = np.zeros([self.size, self.episode_steps, 1])
         self.dones[:, -1] = 1.
         # counter
         self.current_size = 0
@@ -74,7 +82,7 @@ class HerReplayBuffer:
 
         # substitute in future goals
         her_indexes = np.where(np.random.uniform(size=batch_size) < future_p)
-        future_offset = np.random.unifor(size = batch_size) * (T - t_samples)
+        future_offset = np.random.uniform(size = batch_size) * (T - t_samples)
         future_offset = future_offset.astype(int)
         future_t = (t_samples + 1 + future_offset)[her_indexes]
         # replace goal with achieved goal
@@ -83,7 +91,9 @@ class HerReplayBuffer:
 
         # recompute rewards
         reward_params = {k: transitions[k] for k in ["a_goals_", "d_goals"]}
-        transitions["rewards"] = reward_function(**reward_params)
+        # embed();exit()
+        transitions["rewards"] = self.reward_function(**reward_params).reshape(-1, 1)
+        # embed();exit()
         transitions = {k: transitions[k].reshape(batch_size, *transitions[k].shape[1:]) for k in transitions.keys()}
 
         # concatenate desired goals with observation together for network
@@ -94,3 +104,16 @@ class HerReplayBuffer:
             transitions[key] = torch.as_tensor(transitions[key]).float().to(self.device)
 
         return transitions
+
+    def reward_function(self, **parameters):
+        # calculate relative goal
+        relative_goal = {}
+        relative_goal['obj_pos'] = parameters['a_goals_'][:, :3] - parameters['d_goals'][:, :3]
+        relative_goal['obj_rot'] = parameters['a_goals_'][:, 3:] - parameters['d_goals'][:, 3:]
+        pos_distances = np.linalg.norm(relative_goal["obj_pos"], axis=-1)
+        rot_distances = rotation.quat_magnitude(
+            rotation.quat_normalize(rotation.euler2quat(relative_goal["obj_rot"]))
+        )
+        success = np.array((pos_distances < self.pos_threshold) * (rot_distances < self.rot_threshold))
+        success = success.astype(float)
+        return success

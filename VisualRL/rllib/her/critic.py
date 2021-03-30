@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import numpy as np
-
+from IPython import embed
 from VisualRL.rllib.common.utils import weight_init
 
 class Critic(nn.Module):
@@ -12,7 +12,7 @@ class Critic(nn.Module):
             feature_extractor,
             feature_dims,
             ):
-        super(self, Critic).__init__()
+        super(Critic, self).__init__()
         self.observation_space = observation_space
         self.action_space = action_space
         self.feature_extractor = feature_extractor
@@ -21,9 +21,10 @@ class Critic(nn.Module):
         self.q_nets = []
         for i in range(2):
             q_net = nn.Sequential(
-                    nn.Linear(self.feature_dims, 256), nn.ReLU(),
+                    nn.Linear(self.feature_dims + self.action_space, 256), nn.ReLU(),
                     nn.Linear(256, 256), nn.ReLU(),
-                    nn.Linear(256, 64)
+                    nn.Linear(256, 64), nn.ReLU(),
+                    nn.Linear(64, 1)
                     )
             self.add_module(f"q_net{i}", q_net)
             self.q_nets.append(q_net)
@@ -36,6 +37,7 @@ class Critic(nn.Module):
             features = self.feature_extractor(obs)
 
         q_input = torch.cat([features, actions], dim = 1)
+        # embed()
         return tuple(q_net(q_input) for q_net in self.q_nets)
 
     def q1_forward(self, obs, actions):

@@ -1,7 +1,8 @@
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
-from torch.utils.tensorboard import SummaryWritter
+from torch.utils.tensorboard import SummaryWriter
+from IPython import embed
 
 import numpy as np
 
@@ -9,7 +10,7 @@ from VisualRL.common.utils import get_device, set_seed_everywhere
 from VisualRL.rllib.common.torch_layers import make_feature_extractor
 from VisualRL.rllib.her.sac_policy import SACPolicy
 from VisualRL.rllib.her.her_replay_buffer import HerReplayBuffer
-from VisualRL.rllin.common.utils import polyak_update
+from VisualRL.rllib.common.utils import polyak_update
 
 ACTION_SCALE = 0.5
 class HER:
@@ -26,15 +27,15 @@ class HER:
             train_cycle,
             net_class = "MLP",
             target_update_interval = 2,
-            gradient_steps = 1,
-            learning_rate = 3e-4,
+            gradient_steps = 5,
+            learning_rate = 1e-3,
             buffer_size = 1e6,
-            learning_starts = 100,
+            learning_starts = 10,
             batch_size = 256,
             tau = 0.005,
             gamma = 0.99,
             device = None,
-            seed = None,
+            seed = 1,
             ):
 
         self.observation_space = observation_space # network size = 15
@@ -98,7 +99,7 @@ class HER:
         self.policy.to(self.device)
 
         # entropy item
-        self.target_entropy = -np.prod(self.action_space.shape).astype(np.float32)
+        self.target_entropy = -np.prod(self.action_space).astype(np.float32)
         self.log_ent_coef = torch.log(torch.ones(1, device = self.device)).requires_grad_(True)
         self.ent_coef_optimizer = torch.optim.Adam([self.log_ent_coef], lr = 1e-3)
         self.ent_scheduler = torch.optim.lr_scheduler.ExponentialLR(self.ent_coef_optimizer, 0.999)
@@ -107,7 +108,7 @@ class HER:
         self.actor = self.policy.actor
         self.actor_scheduler = self.policy.actor_scheduler
         # critic item
-        self.critic = self.policy.cirtic
+        self.critic = self.policy.critic
         self.critic_target = self.policy.critic_target
         self.critic_scheduler = self.policy.critic_scheduler
 
@@ -133,7 +134,8 @@ class HER:
         desired_goal = desired_goal.reshape(-1, self.dims['goal'])
         obs_input = np.concatenate([observation, desired_goal], axis = 1)
         obs_input = torch.as_tensor(obs_input).float().to(self.device)
-        scaled_action = self.policy.predict(obs_input, determinstic = True)
+        scaled_action = self.policy.predict(obs_input, determinstic = True).squeeze().cpu().numpy()
+        return scaled_action
 
     def _sample_action(self, observation, achieved_goal, desired_goal):
         if self.num_collected_episodes < self.learning_starts:
@@ -144,11 +146,11 @@ class HER:
             desired_goal = desired_goal.reshape(-1, self.dims['goal'])
             obs_input = np.concatenate([observation, desired_goal], axis = 1)
             obs_input = torch.as_tensor(obs_input).float().to(self.device)
-            scaled_action = self.policy.predict(obs_input, determinstic = False)
+            scaled_action = self.policy.predict(obs_input, determinstic = False).squeeze().cpu().numpy()
 
         return scaled_action
 
-    def collect_rollouts(self, env):
+    def collect_rollouts(self, env, writer):
         success_stats = []
         episode = 0
         while episode < self.train_freq:
@@ -161,29 +163,30 @@ class HER:
             desired_goal[:] = obs_dict['desired_goal']
 
             obs, a_goals, acts, d_goals, successes, dones = [], [], [], [], [], []
-            for t in range(self.max_episode_steps):
-                observation_new = np.empty(self.dims['buffer_obs_size'], np.float32)
-                achieved_goal_new = np.empty(self.dims['goal'], np.float32)
-                success = np.zeros(1)
+            with torch.no_grad():
+                for t in range(self.max_episode_steps):
+                    observation_new = np.empty(self.dims['buffer_obs_size'], np.float32)
+                    achieved_goal_new = np.empty(self.dims['goal'], np.float32)
+                    # success = np.zeros(1)
 
-                # step env
-                action= self._sample_action(observation, achieved_goal, desired_goal).cpu().numpy() # action is squashed to [-1, 1] by tanh function
-                obs_dict_new, reward, done, _ = env.step(ACTION_SCALE*action)
-                observation_new = obs_dict_new['observation']
-                achieved_goal_new = obs_dict_new['achieved_goal']
-                success = np.array(obs_dict_new['is_success'])
+                    # step env
+                    action= self._sample_action(observation, achieved_goal, desired_goal) # action is squashed to [-1, 1] by tanh function
+                    obs_dict_new, reward, done, _ = env.step(ACTION_SCALE*action)
+                    observation_new[:] = obs_dict_new['observation']
+                    achieved_goal_new[:] = obs_dict_new['achieved_goal']
+                    success = np.array(obs_dict_new['is_success'])
 
-                # store transitions
-                dones.append(done)
-                obs.append(observation.copy())
-                a_goals.append(achieved_goal.copy())
-                acts.append(action.copy())
-                d_goals.append(desired_goal.copy())
-                successes.append(success.copy())
+                    # store transitions
+                    dones.append(done)
+                    obs.append(observation.copy())
+                    a_goals.append(achieved_goal.copy())
+                    acts.append(action.copy())
+                    d_goals.append(desired_goal.copy())
+                    successes.append(success.copy())
 
-                # update states
-                observation[:] = observation_new.copy()
-                achieved_goal[:] = achieved_goal.copy()
+                    # update states
+                    observation[:] = observation_new.copy()
+                    achieved_goal[:] = achieved_goal_new.copy()
 
             obs.append(observation.copy())
             a_goals.append(achieved_goal.copy())
@@ -197,11 +200,12 @@ class HER:
             episode += 1
             self.num_collected_episodes += 1
             success_stats.append(successes[-1])
-            success_rate = np.mean(np.array(success_stats))
-            #TODO write success_rate to logger here
-
             # add transition to replay buffer
-            self.roullout_buffer.add_episode_transition(episode_transition)
+            self.rollout_buffer.add_episode_transitions(episode_transition)
+
+        success_rate = np.mean(np.array(success_stats))
+        #TODO write success_rate to logger here
+        writer.add_scalar("train/success_rate", success_rate, self._n_updates)
 
 
     def learn(self, env, total_episodes, eval_freq, num_eval_episodes, writer, model_path):
@@ -209,25 +213,27 @@ class HER:
         self._setup_learn()
         # rollout and train model in turn
         while self.num_collected_episodes < total_episodes:
-            self.collect_rollouts(env)
+            self.collect_rollouts(env, writer)
             if self.num_collected_episodes >= self.learning_starts:
-                for i in self.train_cycle:
+                for i in range(self.train_cycle):
                     self.train(self.gradient_steps, self.batch_size, writer)
                 if self.num_collected_episodes//eval_freq == 0:
                     self.eval(env, num_eval_episodes, writer)
                     # save
-                    self.save(model_path, agent._n_updates)
+                    self.save(model_path, self._n_updates)
 
 
-    def eval(self, env, num_eval_episodes, wiriter):
+    def eval(self, env, num_eval_episodes, writer):
+        print(f"evaluate after {self._n_updates} updates...")
         reward_stats, success_rate_stats = [], []
         for episode in range(num_eval_episodes):
             obs_dict = env.reset()
             rewards = []
-            for step in range(self.max_episode_steps):
-                action = self._select_action(obs_dict['observation'], obs_dict['achieved_goal'], obs_dict['desired_goal']).cpu().numpy()
-                obs_dict, reward, done, _ = env.step(ACTION_SCALE*action)
-                rewards.append(reward)
+            with torch.no_grad():
+                for step in range(self.max_episode_steps):
+                    action = self._select_action(obs_dict['observation'], obs_dict['achieved_goal'], obs_dict['desired_goal'])
+                    obs_dict, reward, done, _ = env.step(ACTION_SCALE*action)
+                    rewards.append(reward)
             success = obs_dict['is_success']
             reward_stats.append(np.mean(np.array(rewards)))
             success_rate_stats.append(success)
@@ -239,9 +245,6 @@ class HER:
         writer.add_scalar("eval/success_rate", mean_success_rate, self._n_updates)
 
     def train(self, gradient_steps, batch_size, writer):
-        # update learning rate
-        schedulers = [self.actor_scheduler, self.critic_scheduler, self.ent_scheduler]
-        self._update_learning_rate(schedulers)
         # optimizers
         optimizers = [self.actor.optimizer, self.critic.optimizer, self.ent_coef_optimizer]
         # train
@@ -273,6 +276,7 @@ class HER:
             # get current Q values estimates for each critic net
             current_q_values = self.critic(replay_data["goal_obs_con"], replay_data["actions"])
             # compute critic loss
+            # embed();exit()
             critic_loss = 0.5*sum([F.mse_loss(current_q, target_q_values) for current_q in current_q_values])
             critic_losses.append(critic_loss.item())
             # optimize the critic
@@ -294,6 +298,9 @@ class HER:
                 polyak_update(self.critic.parameters(), self.critic_target.parameters(), self.tau)
 
         self._n_updates += gradient_steps
+        # update learning rate
+        schedulers = [self.actor_scheduler, self.critic_scheduler, self.ent_scheduler]
+        self._update_learning_rate(schedulers)
         # TODO write summary to logger here
         writer.add_scalar("train/ent_coef", np.mean(ent_coefs), self._n_updates)
         writer.add_scalar("train/actor_loss", np.mean(actor_losses), self._n_updates)
@@ -303,7 +310,7 @@ class HER:
 
 
     def _update_learning_rate(self, schedulers):
-        if not isinstance(optimizers, list):
+        if not isinstance(schedulers, list):
             schedulers = [schedulers]
         for scheduler in schedulers:
             scheduler.step()

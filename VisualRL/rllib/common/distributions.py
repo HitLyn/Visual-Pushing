@@ -1,6 +1,9 @@
 import torch
 import torch.nn as nn
+from torch.distributions import Normal, Bernoulli, Binomial
+
 import numpy as np
+
 
 def sum_independent_dims(tensor):
     if len(tensor.shape) > 1:

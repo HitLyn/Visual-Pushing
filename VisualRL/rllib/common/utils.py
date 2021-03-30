@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
-import numpy
+import numpy as np
+import random
 from itertools import zip_longest
 
 

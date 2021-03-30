@@ -35,7 +35,7 @@ class Linear_Extractor(nn.Module):
         self.feature_dims = feature_dims
         self.device = device
         mlp = nn.Sequential(
-            nn.Linear(input_dim, 256), nn.Tanh(),
+            nn.Linear(self.input_dim, 256), nn.Tanh(),
             nn.Linear(256, 256), nn.Tanh(),
             nn.Linear(256, feature_dims), nn.Tanh(),
         )

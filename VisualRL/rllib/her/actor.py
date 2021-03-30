@@ -16,7 +16,7 @@ class Actor(nn.Module):
         super(Actor, self).__init__()
 
         self.action_space = action_space
-        self.feature_extractor = feature_extrator
+        self.feature_extractor = feature_extractor
         self.feature_dims = feature_dims
         self.optimizer = None
 
@@ -42,7 +42,7 @@ class Actor(nn.Module):
     def forward(self, obs, determinstic = False):
         mean_actions, log_std = self.get_action_parameters(obs)
 
-        return self.action_dist.action_from_params(mean_actions, log_std, determinstic = determinstic)
+        return self.action_dist.actions_from_params(mean_actions, log_std, determinstic = determinstic)
 
     def action_log_prob(self, obs):
         mean_actions, log_std = self.get_action_parameters(obs)
