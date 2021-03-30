@@ -24,12 +24,13 @@ parser.add_argument("--min_action", default = -0.5, type = float)
 parser.add_argument("--max_action", default = 0.5, type = float)
 parser.add_argument("--max_episode_steps", default = 40, type = int)
 parser.add_argument("--train_freq", default = 10, type = int)
-parser.add_argument("--learning_starts", default = 10, type = int)
+parser.add_argument("--learning_starts", default = 100, type = int)
+parser.add_argument("--save_interval", default = 50, type = int)
 parser.add_argument("--train_cycle", default = 2, type = int)
 parser.add_argument("--gradient_steps", default = 5, type = int)
 parser.add_argument("--batch_size", default = 128, type = int)
 parser.add_argument("--total_episodes", default = 1e6, type = int)
-parser.add_argument("--eval_freq", default = 100, type = int)
+parser.add_argument("--eval_freq", default = 50, type = int)
 parser.add_argument("--num_eval_episode", default = 10, type = int)
 args = parser.parse_args()
 
@@ -71,6 +72,7 @@ def main():
         max_episode_steps,
         train_freq,
         train_cycle,
+        save_interval = args.save_interval,
         learning_starts = args.learning_starts,
         device = device,
     )

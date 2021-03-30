@@ -27,6 +27,7 @@ class HER:
             train_cycle,
             net_class = "MLP",
             target_update_interval = 2,
+            save_interval = 50,
             gradient_steps = 5,
             learning_rate = 1e-3,
             buffer_size = 1e6,
@@ -47,6 +48,7 @@ class HER:
         self.net_class = net_class
         self.learning_rate = learning_rate
         self.target_update_interval = target_update_interval
+        self.save_interval = save_interval
         self.min_action = min_action
         self.max_action = max_action
         self.buffer_size = buffer_size
@@ -153,6 +155,7 @@ class HER:
     def collect_rollouts(self, env, writer):
         success_stats = []
         episode = 0
+        print(f"collecting rollouts: {self.num_collected_episodes}")
         while episode < self.train_freq:
             obs_dict = env.reset()
             observation = np.empty(self.dims['buffer_obs_size'], np.float32)
@@ -217,14 +220,15 @@ class HER:
             if self.num_collected_episodes >= self.learning_starts:
                 for i in range(self.train_cycle):
                     self.train(self.gradient_steps, self.batch_size, writer)
-                if self.num_collected_episodes//eval_freq == 0:
+                if self.num_collected_episodes % eval_freq == 0:
                     self.eval(env, num_eval_episodes, writer)
                     # save
+                if self.num_collected_episodes % self.save_interval == 0:
                     self.save(model_path, self._n_updates)
 
 
     def eval(self, env, num_eval_episodes, writer):
-        print(f"evaluate after {self._n_updates} updates...")
+        print(f"evaluate after {self.num_collected_episodes} episodes")
         reward_stats, success_rate_stats = [], []
         for episode in range(num_eval_episodes):
             obs_dict = env.reset()
@@ -243,6 +247,7 @@ class HER:
         # TODO write stats to logger here
         writer.add_scalar("eval/mean_reward", mean_reward, self._n_updates)
         writer.add_scalar("eval/success_rate", mean_success_rate, self._n_updates)
+        print(f"success_rate: {mean_success_rate}")
 
     def train(self, gradient_steps, batch_size, writer):
         # optimizers
