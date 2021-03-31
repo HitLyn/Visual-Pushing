@@ -18,7 +18,8 @@ class SACPolicy(nn.Module):
             device,
             min_action,
             max_action,
-            learning_rate
+            learning_rate,
+            net_class,
             ):
         super(SACPolicy, self).__init__()
 
@@ -31,6 +32,7 @@ class SACPolicy(nn.Module):
         self.min_action = min_action
         self.max_action = max_action
         self.initial_learning_rate = learning_rate
+        self.net_class = net_class
 
         # entropy item
         self.target_entropy = -np.prod(self.action_space).astype(np.float32)
@@ -60,7 +62,7 @@ class SACPolicy(nn.Module):
     def make_critic(self, feature_extractor = None):
         critic_kwargs = dict()
         if feature_extractor is None:
-            critic_kwargs["feature_extractor"] = make_feature_extractor("MLP", self.observation_space, self.feature_dims, self.device)
+            critic_kwargs["feature_extractor"] = make_feature_extractor(self.net_class, self.observation_space, self.feature_dims, self.device)
         else:
             critic_kwargs["feature_extractor"] = self.feature_extractor
 

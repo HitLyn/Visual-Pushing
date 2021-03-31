@@ -11,20 +11,21 @@ from IPython import embed
 from VisualRL.rllib.her.her import HER
 from VisualRL.rllib.common.utils import get_device, set_seed_everywhere
 
-from robogym.envs.push.push_env import make_env
+# from robogym.envs.push.push_env import make_env
+import gym
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--task_name", default="YCB-Pushing")
-parser.add_argument("--obs_size", default = 15, type = int)
-parser.add_argument("--action_size", default = 2, type = int)
+parser.add_argument("--task_name", default="Reach")
+parser.add_argument("--obs_size", default = 13, type = int)
+parser.add_argument("--action_size", default = 4, type = int)
 parser.add_argument("--feature_dims", default = 128, type = int)
-parser.add_argument("--goal_size", default = 6, type = int)
+parser.add_argument("--goal_size", default = 3, type = int)
 parser.add_argument("--device", default="auto", type = str)
-parser.add_argument("--min_action", default = -0.5, type = float)
-parser.add_argument("--max_action", default = 0.5, type = float)
-parser.add_argument("--max_episode_steps", default = 100, type = int)
+parser.add_argument("--min_action", default = -1., type = float)
+parser.add_argument("--max_action", default = 1., type = float)
+parser.add_argument("--max_episode_steps", default = 50, type = int)
 parser.add_argument("--train_freq", default = 10, type = int)
-parser.add_argument("--learning_starts", default = 100, type = int)
+parser.add_argument("--learning_starts", default = 50, type = int)
 parser.add_argument("--save_interval", default = 50, type = int)
 parser.add_argument("--train_cycle", default = 2, type = int)
 parser.add_argument("--gradient_steps", default = 5, type = int)
@@ -36,7 +37,7 @@ parser.add_argument("--relative_goal", default = True, type = bool)
 args = parser.parse_args()
 
 
-ACTION_SCALE = 0.5
+ACTION_SCALE = 1.
 def main():
     observation_space = args.obs_size
     action_space = args.action_size
@@ -86,7 +87,7 @@ def main():
     episode = 0
     success_stats = []
     while episode < 100:
-        env = make_env()
+        env = gym.make('FetchReach-v1')
         obs_dict = env.reset()
         observation = np.empty(agent.dims['buffer_obs_size'], np.float32)
         achieved_goal = np.empty(agent.dims['goal'], np.float32)

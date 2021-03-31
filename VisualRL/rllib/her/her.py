@@ -10,6 +10,7 @@ from VisualRL.common.utils import get_device, set_seed_everywhere
 from VisualRL.rllib.common.torch_layers import make_feature_extractor
 from VisualRL.rllib.her.sac_policy import SACPolicy
 from VisualRL.rllib.her.her_replay_buffer import HerReplayBuffer
+from VisualRL.rllib.her.her_replay_buffer_test import HerReplayBufferTest
 from VisualRL.rllib.common.utils import polyak_update
 
 ACTION_SCALE = 0.5
@@ -38,6 +39,7 @@ class HER:
             device = None,
             seed = 1,
             relative_goal = True,
+            test = False
             ):
 
         self.observation_space = observation_space # network size = 15
@@ -45,7 +47,7 @@ class HER:
         self.goal_space = goal_space
         self.buffer_obs_size = observation_space - goal_space # buffer obs shape = 9
         self.max_episode_steps = max_episode_steps
-        self.feature_dims = feature_dims
+        self.feature_dims = observation_space if net_class == "Flatten" else feature_dims
         self.net_class = net_class
         self.learning_rate = learning_rate
         self.target_update_interval = target_update_interval
@@ -72,15 +74,26 @@ class HER:
 
         set_seed_everywhere(self.seed)
 
-        self.rollout_buffer = HerReplayBuffer(
+        if test:
+            self.rollout_buffer = HerReplayBufferTest(
                 buffer_size,
                 max_episode_steps,
                 self.buffer_obs_size,
                 goal_space,
                 action_space,
                 device,
-                self.relative_goal,
-                )
+                relative_goal = self.relative_goal,
+            )
+        else:
+            self.rollout_buffer = HerReplayBuffer(
+                    buffer_size,
+                    max_episode_steps,
+                    self.buffer_obs_size,
+                    goal_space,
+                    action_space,
+                    device,
+                    relative_goal = self.relative_goal,
+                    )
 
         self.feature_extractor = make_feature_extractor(
                 net_class,
@@ -99,6 +112,7 @@ class HER:
                 min_action,
                 max_action,
                 learning_rate = learning_rate,
+                net_class = self.net_class,
                 )
 
         self.policy.to(self.device)
@@ -161,7 +175,7 @@ class HER:
             scaled_action = self.policy.predict(obs_input, determinstic = False).squeeze().cpu().numpy()
         else:
             if self.num_collected_episodes < self.learning_starts:
-                scaled_action = np.random.uniform(2*self.min_action, 2*self.max_action, size = self.dims['action'])
+                scaled_action = np.random.uniform(self.min_action, self.max_action, size = self.dims['action'])
             else:
                 scaled_action = self.policy.predict(obs_input, determinstic = False).squeeze().cpu().numpy()
         return scaled_action

@@ -4,7 +4,7 @@ from IPython import embed
 import torch
 import torch.nn as nn
 
-class HerReplayBuffer:
+class HerReplayBufferTest:
     def __init__(self,
             size_in_transitions,
             episode_steps,
@@ -12,7 +12,7 @@ class HerReplayBuffer:
             goal_shape,
             action_shape,
             device,
-            pos_threshold = 0.03,
+            pos_threshold = 0.05,
             rot_threshold = 0.2,
             relative_goal = True,
             ):
@@ -110,13 +110,9 @@ class HerReplayBuffer:
 
     def reward_function(self, **parameters):
         # calculate relative goal
-        relative_goal = {}
-        relative_goal['obj_pos'] = parameters['a_goals_'][:, :3] - parameters['d_goals'][:, :3]
-        relative_goal['obj_rot'] = parameters['a_goals_'][:, 3:] - parameters['d_goals'][:, 3:]
-        pos_distances = np.linalg.norm(relative_goal["obj_pos"], axis=-1)
-        rot_distances = rotation.quat_magnitude(
-            rotation.quat_normalize(rotation.euler2quat(relative_goal["obj_rot"]))
-        )
-        success = np.array((pos_distances < self.pos_threshold) * (rot_distances < self.rot_threshold))
+        relative_goal = parameters['a_goals_'] - parameters['d_goals']
+        pos_distances = np.linalg.norm(relative_goal, axis=-1)
+
+        success = np.array((pos_distances < self.pos_threshold))
         success = success.astype(float)
         return success
