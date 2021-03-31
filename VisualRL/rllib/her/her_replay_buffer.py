@@ -12,8 +12,9 @@ class HerReplayBuffer:
             goal_shape,
             action_shape,
             device,
-            pos_threshold = 0.02,
-            rot_threshold = 0.15,
+            pos_threshold = 0.03,
+            rot_threshold = 0.2,
+            relative_goal = True,
             ):
         self.size_in_transitions = size_in_transitions
         self.size = int(self.size_in_transitions//episode_steps)
@@ -24,6 +25,7 @@ class HerReplayBuffer:
         self.device = device
         self.pos_threshold = pos_threshold
         self.rot_threshold = rot_threshold
+        self.relative_goal = relative_goal
 
         # buffer
         self.obses = np.empty([self.size, self.episode_steps + 1, self.obs_shape], np.float32)
@@ -97,8 +99,9 @@ class HerReplayBuffer:
         transitions = {k: transitions[k].reshape(batch_size, *transitions[k].shape[1:]) for k in transitions.keys()}
 
         # concatenate desired goals with observation together for network
-        transitions["goal_obs_con"] = np.concatenate([transitions["obses"], transitions["d_goals"]], axis = 1)
-        transitions["next_goal_obs_con"] = np.concatenate([transitions["next_obses"], transitions["d_goals"]], axis = 1)
+        if self.relative_goal:
+            transitions["goal_obs_con"] = np.concatenate([transitions["obses"], transitions["d_goals"] - transitions["a_goals"]], axis = 1)
+            transitions["next_goal_obs_con"] = np.concatenate([transitions["next_obses"], transitions["d_goals"] - transitions["a_goals_"]], axis = 1)
 
         for key in transitions.keys():
             transitions[key] = torch.as_tensor(transitions[key]).float().to(self.device)

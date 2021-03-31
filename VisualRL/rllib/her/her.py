@@ -37,6 +37,7 @@ class HER:
             gamma = 0.99,
             device = None,
             seed = 1,
+            relative_goal = True,
             ):
 
         self.observation_space = observation_space # network size = 15
@@ -58,6 +59,7 @@ class HER:
         self.gamma = gamma
         self.device = device
         self.seed = seed
+        self.relative_goal = relative_goal
         self.gradient_steps = gradient_steps
         self.train_freq = train_freq
         self.train_cycle = train_cycle
@@ -77,6 +79,7 @@ class HER:
                 goal_space,
                 action_space,
                 device,
+                self.relative_goal,
                 )
 
         self.feature_extractor = make_feature_extractor(
@@ -114,6 +117,8 @@ class HER:
         self.critic_target = self.policy.critic_target
         self.critic_scheduler = self.policy.critic_scheduler
 
+        # prepare to learn
+        self._setup_learn()
 
     def to(self, device):
         self.device = device
@@ -133,23 +138,32 @@ class HER:
 
     def _select_action(self, observation, achieved_goal, desired_goal):
         observation = observation.reshape(-1, self.dims['buffer_obs_size'])
-        desired_goal = desired_goal.reshape(-1, self.dims['goal'])
+        # compute relative goal
+        if self.relative_goal:
+            desired_goal = (desired_goal - achieved_goal).reshape(-1, self.dims['goal'])
+        else:
+            desired_goal = desired_goal.reshape(-1, self.dims['goal'])
         obs_input = np.concatenate([observation, desired_goal], axis = 1)
         obs_input = torch.as_tensor(obs_input).float().to(self.device)
         scaled_action = self.policy.predict(obs_input, determinstic = True).squeeze().cpu().numpy()
         return scaled_action
 
-    def _sample_action(self, observation, achieved_goal, desired_goal):
-        if self.num_collected_episodes < self.learning_starts:
-            scaled_action = np.random.uniform(2*self.min_action, 2*self.max_action, size = self.dims['action'])
+    def _sample_action(self, observation, achieved_goal, desired_goal, test = False):
+        # reshape and normalize observations for network
+        observation = observation.reshape(-1, self.dims['buffer_obs_size'])
+        if self.relative_goal:
+            desired_goal = (desired_goal - achieved_goal).reshape(-1, self.dims['goal'])
         else:
-            # reshape and normalize observations for network
-            observation = observation.reshape(-1, self.dims['buffer_obs_size'])
             desired_goal = desired_goal.reshape(-1, self.dims['goal'])
-            obs_input = np.concatenate([observation, desired_goal], axis = 1)
-            obs_input = torch.as_tensor(obs_input).float().to(self.device)
+        obs_input = np.concatenate([observation, desired_goal], axis=1)
+        obs_input = torch.as_tensor(obs_input).float().to(self.device)
+        if test:
             scaled_action = self.policy.predict(obs_input, determinstic = False).squeeze().cpu().numpy()
-
+        else:
+            if self.num_collected_episodes < self.learning_starts:
+                scaled_action = np.random.uniform(2*self.min_action, 2*self.max_action, size = self.dims['action'])
+            else:
+                scaled_action = self.policy.predict(obs_input, determinstic = False).squeeze().cpu().numpy()
         return scaled_action
 
     def collect_rollouts(self, env, writer):
@@ -213,7 +227,7 @@ class HER:
 
     def learn(self, env, total_episodes, eval_freq, num_eval_episodes, writer, model_path):
         # setup model for learning process
-        self._setup_learn()
+        # self._setup_learn()
         # rollout and train model in turn
         while self.num_collected_episodes < total_episodes:
             self.collect_rollouts(env, writer)
@@ -251,7 +265,6 @@ class HER:
 
     def train(self, gradient_steps, batch_size, writer):
         # optimizers
-        optimizers = [self.actor.optimizer, self.critic.optimizer, self.ent_coef_optimizer]
         # train
         ent_coef_losses, ent_coefs, actor_losses, critic_losses = [], [], [], []
         for gradient_step in range(gradient_steps):

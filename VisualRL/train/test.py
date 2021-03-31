@@ -27,7 +27,7 @@ parser.add_argument("--train_freq", default = 10, type = int)
 parser.add_argument("--learning_starts", default = 100, type = int)
 parser.add_argument("--save_interval", default = 50, type = int)
 parser.add_argument("--train_cycle", default = 2, type = int)
-parser.add_argument("--gradient_steps", default = 10, type = int)
+parser.add_argument("--gradient_steps", default = 5, type = int)
 parser.add_argument("--batch_size", default = 128, type = int)
 parser.add_argument("--total_episodes", default = 1e6, type = int)
 parser.add_argument("--eval_freq", default = 50, type = int)
@@ -35,6 +35,8 @@ parser.add_argument("--num_eval_episode", default = 10, type = int)
 parser.add_argument("--relative_goal", default = True, type = bool)
 args = parser.parse_args()
 
+
+ACTION_SCALE = 0.5
 def main():
     observation_space = args.obs_size
     action_space = args.action_size
@@ -62,7 +64,7 @@ def main():
     os.makedirs(model_path, exist_ok=True)
     writer = SummaryWriter(save_path)
     # agent and env
-    env = make_env()
+    # env = make_env()
     agent = HER(
         observation_space,
         action_space,
@@ -78,9 +80,67 @@ def main():
         device = device,
         relative_goal = args.relative_goal,
     )
-    # train
-    agent.learn(env, total_episodes, eval_freq, num_eval_episode, writer, model_path)
+    # TODO load model
 
+    # test
+    episode = 0
+    success_stats = []
+    while episode < 100:
+        env = make_env()
+        obs_dict = env.reset()
+        observation = np.empty(agent.dims['buffer_obs_size'], np.float32)
+        achieved_goal = np.empty(agent.dims['goal'], np.float32)
+        desired_goal = np.empty(agent.dims['goal'], np.float32)
+        observation[:] = obs_dict['observation']
+        achieved_goal[:] = obs_dict['achieved_goal']
+        desired_goal[:] = obs_dict['desired_goal']
+
+        obs, a_goals, acts, d_goals, successes, dones = [], [], [], [], [], []
+        with torch.no_grad():
+            for t in range(agent.max_episode_steps):
+                env.render()
+                # embed();exit()
+                observation_new = np.empty(agent.dims['buffer_obs_size'], np.float32)
+                achieved_goal_new = np.empty(agent.dims['goal'], np.float32)
+                # success = np.zeros(1)
+
+                # step env
+                action = agent._sample_action(observation, achieved_goal,
+                                             desired_goal, test = True)  # action is squashed to [-1, 1] by tanh function
+                print(f"action: {action}")
+                obs_dict_new, reward, done, _ = env.step(ACTION_SCALE * action)
+                observation_new[:] = obs_dict_new['observation']
+                achieved_goal_new[:] = obs_dict_new['achieved_goal']
+                success = np.array(obs_dict_new['is_success'])
+
+                # store transitions
+                dones.append(done)
+                obs.append(observation.copy())
+                a_goals.append(achieved_goal.copy())
+                acts.append(action.copy())
+                d_goals.append(desired_goal.copy())
+                successes.append(success.copy())
+
+                # update states
+                observation[:] = observation_new.copy()
+                achieved_goal[:] = achieved_goal_new.copy()
+
+            obs.append(observation.copy())
+            a_goals.append(achieved_goal.copy())
+
+            episode_transition = dict(
+                o = np.array(obs).copy(),
+                u = np.array(acts).copy(),
+                g = np.array(d_goals).copy(),
+                ag = np.array(a_goals).copy())
+            # stats
+            episode += 1
+            agent.num_collected_episodes += 1
+            success_stats.append(successes[-1])
+            # add transition to replay buffer
+            agent.rollout_buffer.add_episode_transitions(episode_transition)
+            episode += 1
+            env.close()
 
 if __name__ == '__main__':
     main()
