@@ -20,22 +20,25 @@ parser.add_argument("--action_size", default = 2, type = int)
 parser.add_argument("--feature_dims", default = 128, type = int)
 parser.add_argument("--goal_size", default = 6, type = int)
 parser.add_argument("--device", default="auto", type = str)
+parser.add_argument("--net_class", default="Flatten", type = str)
 parser.add_argument("--min_action", default = -0.5, type = float)
 parser.add_argument("--max_action", default = 0.5, type = float)
 parser.add_argument("--max_episode_steps", default = 100, type = int)
 parser.add_argument("--train_freq", default = 10, type = int)
-parser.add_argument("--learning_starts", default = 100, type = int)
-parser.add_argument("--save_interval", default = 50, type = int)
+parser.add_argument("--learning_starts", default = 50, type = int)
+parser.add_argument("--save_interval", default = 100, type = int)
 parser.add_argument("--train_cycle", default = 2, type = int)
 parser.add_argument("--gradient_steps", default = 5, type = int)
 parser.add_argument("--batch_size", default = 128, type = int)
 parser.add_argument("--total_episodes", default = 1e6, type = int)
 parser.add_argument("--eval_freq", default = 50, type = int)
+parser.add_argument("--step", default = 1000, type = int)
 parser.add_argument("--num_eval_episode", default = 10, type = int)
 parser.add_argument("--relative_goal", default = True, type = bool)
+parser.add_argument("--load_weights", default = False, type = bool)
 args = parser.parse_args()
 
-
+WEIGHT_PATH = "/homeL/cong/HitLyn/Visual-Pushing/log_files/her/03_31-22_48/her_models"
 ACTION_SCALE = 0.5
 def main():
     observation_space = args.obs_size
@@ -48,23 +51,9 @@ def main():
     train_freq = args.train_freq
     # embed();exit()
     train_cycle = args.train_cycle
-    gradient_steps = args.gradient_steps
-    batch_size = args.batch_size
-    total_episodes = args.total_episodes
-    eval_freq = args.eval_freq
-    num_eval_episode = args.num_eval_episode
 
     device = get_device(args.device)
-    # save dir
-    # save_dir = os.path.join(os.environ["VISUAL_PUSHING_HOME"], "log_files/her")
-    # train_name = time.strftime("%m_%d-%H_%M", time.gmtime())
-    # os.makedirs(os.path.join(save_dir, train_name), exist_ok=True)
-    # save_path = os.path.join(save_dir, train_name)
-    # model_path = os.path.join(save_path, 'her_models')
-    # os.makedirs(model_path, exist_ok=True)
-    # writer = SummaryWriter(save_path)
-    # agent and env
-    # env = make_env()
+
     agent = HER(
         observation_space,
         action_space,
@@ -75,18 +64,23 @@ def main():
         max_episode_steps,
         train_freq,
         train_cycle,
+        net_class = args.net_class,
         save_interval = args.save_interval,
         learning_starts = args.learning_starts,
         device = device,
         relative_goal = args.relative_goal,
     )
     # TODO load model
+    if args.load_weights:
+        print("loading model ...")
+        agent.load(WEIGHT_PATH, args.step)
+
 
     # test
     episode = 0
     success_stats = []
+    env = make_env()
     while episode < 100:
-        env = make_env()
         obs_dict = env.reset()
         observation = np.empty(agent.dims['buffer_obs_size'], np.float32)
         achieved_goal = np.empty(agent.dims['goal'], np.float32)
@@ -105,8 +99,8 @@ def main():
                 # success = np.zeros(1)
 
                 # step env
-                action = agent._sample_action(observation, achieved_goal,
-                                             desired_goal, test = True)  # action is squashed to [-1, 1] by tanh function
+                action = agent._select_action(observation, achieved_goal,
+                                             desired_goal)  # action is squashed to [-1, 1] by tanh function
                 print(f"action: {action}")
                 obs_dict_new, reward, done, _ = env.step(ACTION_SCALE * action)
                 observation_new[:] = obs_dict_new['observation']

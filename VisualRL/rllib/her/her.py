@@ -26,9 +26,9 @@ class HER:
             max_episode_steps,
             train_freq,
             train_cycle,
-            net_class = "MLP",
+            net_class = "Flatten",
             target_update_interval = 2,
-            save_interval = 50,
+            save_interval = 100,
             gradient_steps = 5,
             learning_rate = 1e-3,
             buffer_size = 1e6,
@@ -252,7 +252,7 @@ class HER:
                     self.eval(env, num_eval_episodes, writer)
                     # save
                 if self.num_collected_episodes % self.save_interval == 0:
-                    self.save(model_path, self._n_updates)
+                    self.save(model_path, self.num_collected_episodes)
 
 
     def eval(self, env, num_eval_episodes, writer):

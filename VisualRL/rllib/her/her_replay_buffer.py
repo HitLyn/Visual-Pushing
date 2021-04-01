@@ -12,8 +12,8 @@ class HerReplayBuffer:
             goal_shape,
             action_shape,
             device,
-            pos_threshold = 0.03,
-            rot_threshold = 0.2,
+            pos_threshold = 0.04,
+            rot_threshold = 0.3,
             relative_goal = True,
             ):
         self.size_in_transitions = size_in_transitions
@@ -38,7 +38,7 @@ class HerReplayBuffer:
         self.current_size = 0
         self.n_transitions_stored = 0
         # her replay params
-        self.replay_k = 4
+        self.replay_k = 2
 
     def full(self):
         return self.current_size == self.size
