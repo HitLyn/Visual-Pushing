@@ -14,7 +14,7 @@ from VisualRL.rllib.common.utils import get_device, set_seed_everywhere
 from robogym.envs.push.push_env import make_env
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--task_name", default="Reach")
+parser.add_argument("--task_name", default="YCB-Pushing")
 parser.add_argument("--obs_size", default = 15, type = int)
 parser.add_argument("--action_size", default = 2, type = int)
 parser.add_argument("--feature_dims", default = 128, type = int)

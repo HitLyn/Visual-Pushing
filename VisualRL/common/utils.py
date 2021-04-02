@@ -9,6 +9,8 @@ import os
 def get_device(device):
     if device == 'auto':
         return torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    elif device == 'cpu':
+        return torch.device('cpu')
     else:
         torch.cuda.set_device(int(device))
         return torch.device("cuda")
