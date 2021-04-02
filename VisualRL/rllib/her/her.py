@@ -65,6 +65,7 @@ class HER:
         self.gradient_steps = gradient_steps
         self.train_freq = train_freq
         self.train_cycle = train_cycle
+        self.num_workers = 20
 
         self.dims = self.get_dims()
 
@@ -133,10 +134,6 @@ class HER:
 
         # prepare to learn
         self._setup_learn()
-
-    def to(self, device):
-        self.device = device
-        self.policy.to(device)
 
     def _setup_learn(self):
         self._episode_num = 0
@@ -238,14 +235,85 @@ class HER:
         #TODO write success_rate to logger here
         writer.add_scalar("train/success_rate", success_rate, self._n_updates)
 
+    def mp_collect_rollouts(self, i, seed_list, mp_list, policy, env, writer):
+        set_seed_everywhere(seed_list[i])
+        # stats
+        success_stats = []
+        # rollout for all workers
+        obs_dict = env.reset()
+        observation = np.empty(self.dims['buffer_obs_size'], np.float32)
+        achieved_goal = np.empty(self.dims['goal'], np.float32)
+        desired_goal = np.empty(self.dims['goal'], np.float32)
+        observation[:] = obs_dict['observation']
+        achieved_goal[:] = obs_dict['achieved_goal']
+        desired_goal[:] = obs_dict['desired_goal']
 
-    def learn(self, env, total_episodes, eval_freq, num_eval_episodes, writer, model_path):
-        # setup model for learning process
-        # self._setup_learn()
+        obs, a_goals, acts, d_goals, successes, dones = [], [], [], [], [], []
+        with torch.no_grad():
+            for t in range(self.max_episode_steps):
+                observation_new = np.empty(self.dims['buffer_obs_size'], np.float32)
+                achieved_goal_new = np.empty(self.dims['goal'], np.float32)
+                # success = np.zeros(1)
+
+                # step env
+                action= self._sample_action(observation, achieved_goal, desired_goal) # action is squashed to [-1, 1] by tanh function
+                obs_dict_new, reward, done, _ = env.step(ACTION_SCALE*action)
+                observation_new[:] = obs_dict_new['observation']
+                achieved_goal_new[:] = obs_dict_new['achieved_goal']
+                success = np.array(obs_dict_new['is_success'])
+
+                # store transitions
+                dones.append(done)
+                obs.append(observation.copy())
+                a_goals.append(achieved_goal.copy())
+                acts.append(action.copy())
+                d_goals.append(desired_goal.copy())
+                successes.append(success.copy())
+
+                # update states
+                observation[:] = observation_new.copy()
+                achieved_goal[:] = achieved_goal_new.copy()
+
+        obs.append(observation.copy())
+        a_goals.append(achieved_goal.copy())
+
+        episode_transition = dict(
+            o = np.array(obs).copy(),
+            u = np.array(acts).copy(),
+            g = np.array(d_goals).copy(),
+            ag = np.array(a_goals).copy())
+
+        # add transition to mp_list
+        mp_list.append(episode_transition)
+
+
+    def to(self, device):
+        self.device = device
+        self.policy.to(device)
+
+    def learn(self, env, total_episodes, eval_freq, num_eval_episodes, writer, model_path, mp = False):
         # rollout and train model in turn
         while self.num_collected_episodes < total_episodes:
-            self.collect_rollouts(env, writer)
+            if mp:
+                # move policy to cpu
+                self.policy.to(torch.device("cpu"))
+                with torch.no_grad():
+                    tmp_seed_list = np.random.randint(1, 10000, size=self.num_workers)
+                    mp_list = mp.Manager().list()
+                    workers = [mp.Process(target=self.mp_collect_rollouts,
+                                          args=(i, tmp_seed_list, mp_list, self.policy, env, writer))
+                               for i in range(self.num_workers)]
+                    [worker.start() for worker in workers]
+                    [worker.join() for worker in workers]
+                    mp_list = list(mp_list)
+                self.rollout_buffer.add_episode_transitions_list(mp_list)
+                self.num_collected_episodes += 1
+                print(f"collecting rollouts with {self.num_workers} workers, episodes {self.num_collected_episodes}")
+            else:
+                self.collect_rollouts(env, writer)
             if self.num_collected_episodes >= self.learning_starts:
+                # move policy back to gpu
+                self.policy.to(self.device)
                 for i in range(self.train_cycle):
                     self.train(self.gradient_steps, self.batch_size, writer)
                 if self.num_collected_episodes % eval_freq == 0:

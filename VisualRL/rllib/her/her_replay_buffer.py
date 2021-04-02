@@ -54,6 +54,12 @@ class HerReplayBuffer:
         self.current_size += 1
         self.n_transitions_stored += self.episode_steps
 
+    def add_episode_transitions_list(self, transition_dict_list):
+        # multiprocess store
+        for transition_dict in transition_dict_list:
+            self.add_episode_transitions(transition_dict)
+
+
     def _get_storage_idx(self):
         idx = self.current_size % self.size
         return idx
@@ -72,7 +78,7 @@ class HerReplayBuffer:
 
         return transitions
 
-    def sample_transitions(self, buffer_, batch_size):
+    def sample_transitions(self, buffer_, batch_size, device = self.device):
         future_p = 1 - (1./(1 + self.replay_k))
         T = buffer_["actions"].shape[1]
         episode_nums = buffer_["actions"].shape[0]
@@ -104,7 +110,7 @@ class HerReplayBuffer:
             transitions["next_goal_obs_con"] = np.concatenate([transitions["next_obses"], transitions["d_goals"] - transitions["a_goals_"]], axis = 1)
 
         for key in transitions.keys():
-            transitions[key] = torch.as_tensor(transitions[key]).float().to(self.device)
+            transitions[key] = torch.as_tensor(transitions[key]).float().to(device)
 
         return transitions
 
