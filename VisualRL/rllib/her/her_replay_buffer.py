@@ -78,7 +78,11 @@ class HerReplayBuffer:
 
         return transitions
 
-    def sample_transitions(self, buffer_, batch_size, device = self.device):
+    def sample_transitions(self, buffer_, batch_size, device = None):
+
+        if device is None:
+            device = self.device
+
         future_p = 1 - (1./(1 + self.replay_k))
         T = buffer_["actions"].shape[1]
         episode_nums = buffer_["actions"].shape[0]

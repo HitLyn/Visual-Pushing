@@ -81,7 +81,7 @@ def main():
         relative_goal = args.relative_goal,
     )
     # train
-    agent.learn(env, total_episodes, eval_freq, num_eval_episode, writer, model_path)
+    agent.learn(env, total_episodes, eval_freq, num_eval_episode, writer, model_path, mp = args.mp)
 
 
 if __name__ == '__main__':

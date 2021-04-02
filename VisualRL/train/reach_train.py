@@ -35,6 +35,7 @@ parser.add_argument("--total_episodes", default = 1e6, type = int)
 parser.add_argument("--eval_freq", default = 50, type = int)
 parser.add_argument("--num_eval_episode", default = 10, type = int)
 parser.add_argument("--relative_goal", default = True, type = bool)
+parser.add_argument("--mp", default = False, type = bool)
 args = parser.parse_args()
 
 def main():
@@ -83,7 +84,7 @@ def main():
         test = True,
     )
     # train
-    agent.learn(env, total_episodes, eval_freq, num_eval_episode, writer, model_path)
+    agent.learn(env, total_episodes, eval_freq, num_eval_episode, writer, model_path, mp = args.mp)
 
 
 if __name__ == '__main__':
