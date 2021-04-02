@@ -72,6 +72,10 @@ class HerReplayBufferTest:
 
         return transitions
 
+    def add_episode_transitions_list(self, transition_dict_list):
+        # multiprocess store
+        for transition_dict in transition_dict_list:
+            self.add_episode_transitions(transition_dict)
     def sample_transitions(self, buffer_, batch_size):
         future_p = 1 - (1./(1 + self.replay_k))
         T = buffer_["actions"].shape[1]

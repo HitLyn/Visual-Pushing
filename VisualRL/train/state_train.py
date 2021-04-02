@@ -3,6 +3,7 @@ import torch.nn as nn
 from torch.utils.tensorboard import SummaryWriter
 import numpy as np
 from IPython import embed
+import multiprocessing as mp
 import argparse
 import os
 import time
@@ -10,8 +11,8 @@ from IPython import embed
 
 from VisualRL.rllib.her.her import HER
 from VisualRL.rllib.common.utils import get_device, set_seed_everywhere
-
-from robogym.envs.push.push_env import make_env
+import gym
+from robogym.envs.push.ycb import make_env
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--task_name", default="YCB-Pushing")
@@ -19,7 +20,7 @@ parser.add_argument("--obs_size", default = 15, type = int)
 parser.add_argument("--action_size", default = 2, type = int)
 parser.add_argument("--feature_dims", default = 128, type = int)
 parser.add_argument("--goal_size", default = 6, type = int)
-parser.add_argument("--device", default="auto", type = str)
+parser.add_argument("--device", default="cpu", type = str)
 parser.add_argument("--net_class", default="Flatten", type = str)
 parser.add_argument("--min_action", default = -0.5, type = float)
 parser.add_argument("--max_action", default = 0.5, type = float)
@@ -33,8 +34,71 @@ parser.add_argument("--batch_size", default = 128, type = int)
 parser.add_argument("--total_episodes", default = 1e6, type = int)
 parser.add_argument("--eval_freq", default = 100, type = int)
 parser.add_argument("--num_eval_episode", default = 10, type = int)
-parser.add_argument("--relative_goal", default = True, type = bool)
+parser.add_argument("--relative_goal", default = True)
+parser.add_argument("--mp", action = "store_true")
 args = parser.parse_args()
+
+def count(i, env):
+    # print(env)
+    print(i)
+    # env = gym.make("FetchPush-v1")
+    # embed()
+    # env = make_env()
+    # print(env)
+    env.reset()
+    print('get env')
+    return env
+
+def mp_collect_rollouts(i, seed_list, mp_list, agent, env, writer):
+    set_seed_everywhere(seed_list[i])
+
+    obs_dict = env.reset()
+    observation = np.empty(agent.dims['buffer_obs_size'], np.float32)
+    achieved_goal = np.empty(agent.dims['goal'], np.float32)
+    desired_goal = np.empty(agent.dims['goal'], np.float32)
+    observation[:] = obs_dict['observation']
+    achieved_goal[:] = obs_dict['achieved_goal']
+    desired_goal[:] = obs_dict['desired_goal']
+
+    obs, a_goals, acts, d_goals, successes, dones = [], [], [], [], [], []
+    with torch.no_grad():
+        for t in range(agent.max_episode_steps):
+            observation_new = np.empty(agent.dims['buffer_obs_size'], np.float32)
+            achieved_goal_new = np.empty(agent.dims['goal'], np.float32)
+            # success = np.zeros(1)
+
+            # step env
+            action = agent._sample_action(observation, achieved_goal,
+                                         desired_goal)  # action is squashed to [-1, 1] by tanh function
+            obs_dict_new, reward, done, _ = env.step(0.5 * action)
+            observation_new[:] = obs_dict_new['observation']
+            achieved_goal_new[:] = obs_dict_new['achieved_goal']
+            success = np.array(obs_dict_new['is_success'])
+
+            # store transitions
+            dones.append(done)
+            obs.append(observation.copy())
+            a_goals.append(achieved_goal.copy())
+            acts.append(action.copy())
+            d_goals.append(desired_goal.copy())
+            successes.append(success.copy())
+
+            # update states
+            observation[:] = observation_new.copy()
+            achieved_goal[:] = achieved_goal_new.copy()
+
+    obs.append(observation.copy())
+    a_goals.append(achieved_goal.copy())
+
+    episode_transition = dict(
+        o=np.array(obs).copy(),
+        u=np.array(acts).copy(),
+        g=np.array(d_goals).copy(),
+        ag=np.array(a_goals).copy())
+
+    # add transition to mp_list
+    mp_list.append(episode_transition)
+
 
 def main():
     observation_space = args.obs_size
@@ -81,7 +145,22 @@ def main():
         relative_goal = args.relative_goal,
     )
     # train
-    agent.learn(env, total_episodes, eval_freq, num_eval_episode, writer, model_path, mp = args.mp)
+    # agent.learn(env, total_episodes, eval_freq, num_eval_episode, writer, model_path, multiprocess = args.mp)
+    with torch.no_grad():
+        tmp_seed_list = np.random.randint(1, 10000, size=20)
+        # env1 = gym.make("FetchPush-v1")
+        # env2 = gym.make("FetchPush-v1")
+        env1 = make_env()
+        env2 = make_env()
+
+        mp_list = mp.Manager().list()
+        workers = [mp.Process(target=count,
+                              args=(i, env))
+                   for i in range(3)]
+        # embed()
+        [worker.start() for worker in workers]
+        [worker.join() for worker in workers]
+        mp_list = list(mp_list)
 
 
 if __name__ == '__main__':

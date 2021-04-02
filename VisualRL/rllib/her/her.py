@@ -3,6 +3,7 @@ import torch.nn as nn
 from torch.nn import functional as F
 from torch.utils.tensorboard import SummaryWriter
 from IPython import embed
+import multiprocessing as mp
 
 import numpy as np
 
@@ -291,23 +292,25 @@ class HER:
         self.device = device
         self.policy.to(device)
 
-    def learn(self, env, total_episodes, eval_freq, num_eval_episodes, writer, model_path, mp = False):
+    def learn(self, env, total_episodes, eval_freq, num_eval_episodes, writer, model_path, multiprocess = False):
         # rollout and train model in turn
         while self.num_collected_episodes < total_episodes:
-            if mp:
+            if multiprocess:
                 # move policy to cpu
                 self.policy.to(torch.device("cpu"))
+                # print('create mp target')
                 with torch.no_grad():
                     tmp_seed_list = np.random.randint(1, 10000, size=self.num_workers)
                     mp_list = mp.Manager().list()
                     workers = [mp.Process(target=self.mp_collect_rollouts,
                                           args=(i, tmp_seed_list, mp_list, self.policy, env, writer))
                                for i in range(self.num_workers)]
+                    # embed()
                     [worker.start() for worker in workers]
                     [worker.join() for worker in workers]
                     mp_list = list(mp_list)
                 self.rollout_buffer.add_episode_transitions_list(mp_list)
-                self.num_collected_episodes += 1
+                self.num_collected_episodes += self.num_workers
                 print(f"collecting rollouts with {self.num_workers} workers, episodes {self.num_collected_episodes}")
             else:
                 self.collect_rollouts(env, writer)

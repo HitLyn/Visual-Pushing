@@ -20,7 +20,7 @@ parser.add_argument("--obs_size", default = 13, type = int)
 parser.add_argument("--action_size", default = 4, type = int)
 parser.add_argument("--feature_dims", default = 128, type = int)
 parser.add_argument("--goal_size", default = 3, type = int)
-parser.add_argument("--device", default="auto", type = str)
+parser.add_argument("--device", default="cpu", type = str)
 parser.add_argument("--net_class", default="Flatten", type = str)
 parser.add_argument("--min_action", default = -1., type = float)
 parser.add_argument("--max_action", default = 1., type = float)
@@ -28,14 +28,14 @@ parser.add_argument("--max_episode_steps", default = 50, type = int)
 parser.add_argument("--train_freq", default = 10, type = int)
 parser.add_argument("--learning_starts", default = 50, type = int)
 parser.add_argument("--save_interval", default = 100, type = int)
-parser.add_argument("--train_cycle", default = 1, type = int)
+parser.add_argument("--train_cycle", default = 2, type = int)
 parser.add_argument("--gradient_steps", default = 20, type = int)
 parser.add_argument("--batch_size", default = 128, type = int)
 parser.add_argument("--total_episodes", default = 1e6, type = int)
 parser.add_argument("--eval_freq", default = 50, type = int)
 parser.add_argument("--num_eval_episode", default = 10, type = int)
-parser.add_argument("--relative_goal", default = True, type = bool)
-parser.add_argument("--mp", default = False, type = bool)
+parser.add_argument("--relative_goal", default = True)
+parser.add_argument("--mp", default = True)
 args = parser.parse_args()
 
 def main():
@@ -84,7 +84,8 @@ def main():
         test = True,
     )
     # train
-    agent.learn(env, total_episodes, eval_freq, num_eval_episode, writer, model_path, mp = args.mp)
+    # embed()
+    agent.learn(env, total_episodes, eval_freq, num_eval_episode, writer, model_path, multiprocess = args.mp)
 
 
 if __name__ == '__main__':
