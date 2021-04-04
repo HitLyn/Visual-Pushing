@@ -16,7 +16,7 @@ import gym
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--task_name", default="YCB-Pushing")
-parser.add_argument("--obs_size", default = 13, type = int)
+parser.add_argument("--obs_size", default = 28, type = int)
 parser.add_argument("--action_size", default = 4, type = int)
 parser.add_argument("--feature_dims", default = 128, type = int)
 parser.add_argument("--goal_size", default = 3, type = int)
@@ -28,14 +28,14 @@ parser.add_argument("--max_episode_steps", default = 50, type = int)
 parser.add_argument("--train_freq", default = 10, type = int)
 parser.add_argument("--learning_starts", default = 50, type = int)
 parser.add_argument("--save_interval", default = 100, type = int)
-parser.add_argument("--train_cycle", default = 2, type = int)
-parser.add_argument("--gradient_steps", default = 20, type = int)
+parser.add_argument("--train_cycle", default = 1, type = int)
+parser.add_argument("--gradient_steps", default = 40, type = int)
 parser.add_argument("--batch_size", default = 128, type = int)
 parser.add_argument("--total_episodes", default = 1e6, type = int)
 parser.add_argument("--eval_freq", default = 50, type = int)
 parser.add_argument("--num_eval_episode", default = 10, type = int)
 parser.add_argument("--relative_goal", default = True)
-parser.add_argument("--mp", default = True)
+parser.add_argument("--mp", action = "store_true")
 args = parser.parse_args()
 
 def main():
@@ -65,7 +65,7 @@ def main():
     os.makedirs(model_path, exist_ok=True)
     writer = SummaryWriter(save_path)
     # agent and env
-    env = gym.make("FetchReach-v1")
+    env = gym.make("FetchPush-v1")
     agent = HER(
         observation_space,
         action_space,

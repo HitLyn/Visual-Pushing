@@ -12,7 +12,7 @@ from IPython import embed
 from VisualRL.rllib.her.her import HER
 from VisualRL.rllib.common.utils import get_device, set_seed_everywhere
 import gym
-from robogym.envs.push.ycb import make_env
+from robogym.envs.push.push_env import make_env
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--task_name", default="YCB-Pushing")
@@ -28,8 +28,8 @@ parser.add_argument("--max_episode_steps", default = 40, type = int)
 parser.add_argument("--train_freq", default = 10, type = int)
 parser.add_argument("--learning_starts", default = 20, type = int)
 parser.add_argument("--save_interval", default = 100, type = int)
-parser.add_argument("--train_cycle", default = 2, type = int)
-parser.add_argument("--gradient_steps", default = 10, type = int)
+parser.add_argument("--train_cycle", default = 1, type = int)
+parser.add_argument("--gradient_steps", default = 40, type = int)
 parser.add_argument("--batch_size", default = 128, type = int)
 parser.add_argument("--total_episodes", default = 1e6, type = int)
 parser.add_argument("--eval_freq", default = 100, type = int)
@@ -145,22 +145,22 @@ def main():
         relative_goal = args.relative_goal,
     )
     # train
-    # agent.learn(env, total_episodes, eval_freq, num_eval_episode, writer, model_path, multiprocess = args.mp)
-    with torch.no_grad():
-        tmp_seed_list = np.random.randint(1, 10000, size=20)
-        # env1 = gym.make("FetchPush-v1")
-        # env2 = gym.make("FetchPush-v1")
-        env1 = make_env()
-        env2 = make_env()
-
-        mp_list = mp.Manager().list()
-        workers = [mp.Process(target=count,
-                              args=(i, env))
-                   for i in range(3)]
-        # embed()
-        [worker.start() for worker in workers]
-        [worker.join() for worker in workers]
-        mp_list = list(mp_list)
+    agent.learn(env, total_episodes, eval_freq, num_eval_episode, writer, model_path, multiprocess = args.mp)
+    # with torch.no_grad():
+    #     tmp_seed_list = np.random.randint(1, 10000, size=20)
+    #     # env1 = gym.make("FetchPush-v1")
+    #     # env2 = gym.make("FetchPush-v1")
+    #     env1 = make_env()
+    #     env2 = make_env()
+    #
+    #     mp_list = mp.Manager().list()
+    #     workers = [mp.Process(target=count,
+    #                           args=(i, env))
+    #                for i in range(3)]
+    #     # embed()
+    #     [worker.start() for worker in workers]
+    #     [worker.join() for worker in workers]
+    #     mp_list = list(mp_list)
 
 
 if __name__ == '__main__':

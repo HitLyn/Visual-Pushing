@@ -38,7 +38,7 @@ class HerReplayBuffer:
         self.current_size = 0
         self.n_transitions_stored = 0
         # her replay params
-        self.replay_k = 2
+        self.replay_k = 4
 
     def full(self):
         return self.current_size == self.size

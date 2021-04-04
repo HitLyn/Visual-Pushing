@@ -28,13 +28,13 @@ class HER:
             train_freq,
             train_cycle,
             net_class = "Flatten",
-            target_update_interval = 2,
+            target_update_interval = 20,
             save_interval = 100,
             gradient_steps = 5,
             learning_rate = 1e-3,
             buffer_size = 1e6,
-            learning_starts = 10,
-            batch_size = 256,
+            learning_starts = 100,
+            batch_size = 5096,
             tau = 0.005,
             gamma = 0.99,
             device = None,
@@ -309,6 +309,8 @@ class HER:
                     [worker.start() for worker in workers]
                     [worker.join() for worker in workers]
                     mp_list = list(mp_list)
+                    # pool = mp.Pool(self.num_workers)
+                    # mp_list = [pool.apply(self.mp_collect_rollouts_, args = (i, tmp_seed_list, env)) for i in range(self.num_workers)]
                 self.rollout_buffer.add_episode_transitions_list(mp_list)
                 self.num_collected_episodes += self.num_workers
                 print(f"collecting rollouts with {self.num_workers} workers, episodes {self.num_collected_episodes}")
@@ -397,8 +399,10 @@ class HER:
             self.actor.optimizer.step()
 
             # updata target network
-            if gradient_step % self.target_update_interval == 0:
-                polyak_update(self.critic.parameters(), self.critic_target.parameters(), self.tau)
+
+            # if gradient_step % self.target_update_interval == 0:
+        # update critic target
+        polyak_update(self.critic.parameters(), self.critic_target.parameters(), self.tau)
 
         self._n_updates += gradient_steps
         # update learning rate
