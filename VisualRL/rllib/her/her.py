@@ -34,7 +34,7 @@ class HER:
             learning_rate = 1e-3,
             buffer_size = 1e6,
             learning_starts = 100,
-            batch_size = 5096,
+            batch_size = 1024,
             tau = 0.005,
             gamma = 0.99,
             device = None,
@@ -312,7 +312,7 @@ class HER:
                     # pool = mp.Pool(self.num_workers)
                     # mp_list = [pool.apply(self.mp_collect_rollouts_, args = (i, tmp_seed_list, env)) for i in range(self.num_workers)]
                 self.rollout_buffer.add_episode_transitions_list(mp_list)
-                self.num_collected_episodes += self.num_workers
+                self.num_collected_episodes += 1
                 print(f"collecting rollouts with {self.num_workers} workers, episodes {self.num_collected_episodes}")
             else:
                 self.collect_rollouts(env, writer)
