@@ -21,7 +21,7 @@ class DiagGaussianDistribution():
 
     def proba_distribution(self, mean_actions, log_std):
         action_std = torch.ones_like(mean_actions) * log_std.exp()
-        self.distribution = Normal(mean_actions, action_std)
+        self.distribution = Normal(mean_actions, action_std, validate_args=False)
         return self
 
     def log_prob(self, actions):
