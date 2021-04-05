@@ -9,7 +9,7 @@ model_class = SAC  # works also with SAC, DDPG and TD3
 N_BITS = 50
 
 # env = BitFlippingEnv(n_bits=N_BITS, continuous=model_class in [DDPG, SAC, TD3], max_steps=N_BITS)
-env = gym.make("FetchPush-v1")
+env = gym.make("FetchReach-v1")
 # Available strategies (cf paper): future, final, episode
 goal_selection_strategy = 'future' # equivalent to GoalSelectionStrategy.FUTURE
 

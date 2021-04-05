@@ -43,7 +43,7 @@ class HER:
             test = False
             ):
 
-        self.observation_space = observation_space # network size = 15
+        self.observation_space = observation_space # network size
         self.action_space = action_space
         self.goal_space = goal_space
         self.buffer_obs_size = observation_space - goal_space # buffer obs shape = 9
