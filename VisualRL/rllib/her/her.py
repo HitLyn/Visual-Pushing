@@ -30,7 +30,7 @@ class HER:
             net_class = "Flatten",
             target_update_interval = 20,
             save_interval = 100,
-            gradient_steps = 5,
+            gradient_steps = 40,
             learning_rate = 1e-3,
             buffer_size = 1e6,
             learning_starts = 100,
@@ -319,8 +319,7 @@ class HER:
             if self.num_collected_episodes >= self.learning_starts:
                 # move policy back to gpu
                 self.policy.to(self.device)
-                for i in range(self.train_cycle):
-                    self.train(self.gradient_steps, self.batch_size, writer)
+                self.train(self.gradient_steps, self.batch_size, writer)
                 if self.num_collected_episodes % eval_freq == 0:
                     self.eval(env, num_eval_episodes, writer)
                     # save

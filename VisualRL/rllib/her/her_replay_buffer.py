@@ -46,10 +46,10 @@ class HerReplayBuffer:
     def add_episode_transitions(self, transition_dict):
         # find idx to store transitions
         idx = self._get_storage_idx()
-        self.obses[idx] = transition_dict["o"]
-        self.a_goals[idx] = transition_dict["ag"]
-        self.d_goals[idx] = transition_dict["g"]
-        self.actions[idx] = transition_dict["u"]
+        self.obses[idx] = transition_dict["o"].copy()
+        self.a_goals[idx] = transition_dict["ag"].copy()
+        self.d_goals[idx] = transition_dict["g"].copy()
+        self.actions[idx] = transition_dict["u"].copy()
         # update size counter
         self.current_size += 1
         self.n_transitions_stored += self.episode_steps
