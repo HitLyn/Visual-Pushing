@@ -122,7 +122,7 @@ class HER:
         # entropy item
         self.target_entropy = -np.prod(self.action_space).astype(np.float32)
         self.log_ent_coef = torch.log(torch.ones(1, device = self.device)).requires_grad_(True)
-        self.ent_coef_optimizer = torch.optim.Adam([self.log_ent_coef], lr = 1e-3)
+        self.ent_coef_optimizer = torch.optim.Adam([self.log_ent_coef], lr = 3e-4)
         self.ent_scheduler = torch.optim.lr_scheduler.ExponentialLR(self.ent_coef_optimizer, 0.999)
 
         # actor item
