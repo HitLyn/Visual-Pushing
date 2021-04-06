@@ -398,10 +398,11 @@ class HER:
             self.actor.optimizer.step()
 
             # updata target network
+            polyak_update(self.critic.parameters(), self.critic_target.parameters(), self.tau)
 
             # if gradient_step % self.target_update_interval == 0:
         # update critic target
-        polyak_update(self.critic.parameters(), self.critic_target.parameters(), self.tau)
+        # polyak_update(self.critic.parameters(), self.critic_target.parameters(), self.tau)
 
         self._n_updates += gradient_steps
         # update learning rate
