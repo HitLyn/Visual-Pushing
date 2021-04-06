@@ -34,7 +34,7 @@ class HER:
             learning_rate = 1e-3,
             buffer_size = 1e6,
             learning_starts = 100,
-            batch_size = 1024,
+            batch_size = 256,
             tau = 0.005,
             gamma = 0.99,
             device = None,
