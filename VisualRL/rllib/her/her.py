@@ -14,7 +14,7 @@ from VisualRL.rllib.her.her_replay_buffer import HerReplayBuffer
 from VisualRL.rllib.her.her_replay_buffer_test import HerReplayBufferTest
 from VisualRL.rllib.common.utils import polyak_update
 
-ACTION_SCALE = 0.5
+ACTION_SCALE = 1.
 class HER:
     def __init__(
             self,
@@ -318,7 +318,7 @@ class HER:
                 self.collect_rollouts(env, writer)
             if self.num_collected_episodes >= self.learning_starts:
                 # move policy back to gpu
-                self.policy.to(self.device)
+                # self.policy.to(self.device)
                 self.train(self.gradient_steps, self.batch_size, writer)
                 if self.num_collected_episodes % eval_freq == 0:
                     self.eval(env, num_eval_episodes, writer)

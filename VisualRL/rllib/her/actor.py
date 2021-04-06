@@ -23,7 +23,7 @@ class Actor(nn.Module):
         self.latent_pi_net = nn.Sequential(
                 nn.Linear(feature_dims, 256), nn.ReLU(),
                 nn.Linear(256, 256), nn.ReLU(),
-                nn.Linear(256, 64),
+                nn.Linear(256, 64),nn.ReLU(),
                 )
         self.action_dist = SquashedDiagGaussianDistribution(action_space)
         self.mu = nn.Linear(64, action_space)

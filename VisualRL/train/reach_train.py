@@ -20,7 +20,7 @@ parser.add_argument("--obs_size", default = 28, type = int) #observation_size + 
 parser.add_argument("--action_size", default = 4, type = int)
 parser.add_argument("--feature_dims", default = 128, type = int)
 parser.add_argument("--goal_size", default = 3, type = int)
-parser.add_argument("--device", default="cpu", type = str)
+parser.add_argument("--device", default="auto", type = str)
 parser.add_argument("--net_class", default="Flatten", type = str)
 parser.add_argument("--min_action", default = -1., type = float)
 parser.add_argument("--max_action", default = 1., type = float)
