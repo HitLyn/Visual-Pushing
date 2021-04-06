@@ -30,7 +30,7 @@ class HER:
             net_class = "Flatten",
             target_update_interval = 20,
             save_interval = 100,
-            gradient_steps = 40,
+            gradient_steps = 50,
             learning_rate = 1e-3,
             buffer_size = 1e6,
             learning_starts = 100,

@@ -30,7 +30,7 @@ parser.add_argument("--learning_starts", default = 2, type = int)
 parser.add_argument("--learning_rate", default = 0.0003, type = float)
 parser.add_argument("--save_interval", default = 100, type = int)
 parser.add_argument("--train_cycle", default = 1, type = int)
-parser.add_argument("--gradient_steps", default = 40, type = int)
+parser.add_argument("--gradient_steps", default = 50, type = int)
 parser.add_argument("--batch_size", default = 256, type = int)
 parser.add_argument("--total_episodes", default = 1e6, type = int)
 parser.add_argument("--eval_freq", default = 50, type = int)
@@ -78,6 +78,7 @@ def main():
         train_freq,
         train_cycle,
         net_class = args.net_class,
+        gradient_steps=args.gradient_steps,
         save_interval = args.save_interval,
         learning_starts = args.learning_starts,
         learning_rate = args.learning_rate,
