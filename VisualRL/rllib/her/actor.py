@@ -20,6 +20,7 @@ class Actor(nn.Module):
         self.feature_extractor = feature_extractor
         self.feature_dims = feature_dims
         self.optimizer = None
+        self.log_std_init = 0.
 
         self.latent_pi_net = nn.Sequential(
                 nn.Linear(feature_dims, 256), nn.ReLU(),
@@ -28,7 +29,7 @@ class Actor(nn.Module):
                 )
         self.action_dist = SquashedDiagGaussianDistribution(action_space)
         self.mu = nn.Linear(64, action_space)
-        self.log_std = nn.Linear(64, action_space)
+        self.log_std = nn.Parameter(torch.ones(self.action_dim) * self.log_std_init, requires_grad=True)
 
         self.apply(weight_init)
 
