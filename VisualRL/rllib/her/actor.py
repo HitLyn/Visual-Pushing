@@ -29,7 +29,7 @@ class Actor(nn.Module):
                 )
         self.action_dist = SquashedDiagGaussianDistribution(action_space)
         self.mu = nn.Linear(64, action_space)
-        self.log_std = nn.Parameter(torch.ones(self.action_dim) * self.log_std_init, requires_grad=True)
+        self.log_std = nn.Linear(64, action_space)
 
         self.apply(weight_init)
 
