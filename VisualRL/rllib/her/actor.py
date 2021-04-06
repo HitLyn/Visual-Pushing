@@ -5,7 +5,8 @@ import numpy as np
 from VisualRL.rllib.common.distributions import SquashedDiagGaussianDistribution
 from VisualRL.rllib.common.utils import weight_init
 
-
+LOGSTD_MIN = -20
+LOGSTD_MAX = 2
 class Actor(nn.Module):
     def __init__(
             self,
@@ -35,7 +36,7 @@ class Actor(nn.Module):
         features = self.feature_extractor(obs)
         latent_pi = self.latent_pi_net(features)
         mean_actions = self.mu(latent_pi)
-        log_std = self.log_std(latent_pi)
+        log_std = torch.clamp(self.log_std(latent_pi), LOGSTD_MIN, LOGSTD_MAX)
 
         return mean_actions, log_std
 
