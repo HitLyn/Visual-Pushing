@@ -16,7 +16,7 @@ import gym
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--task_name", default="YCB-Pushing")
-parser.add_argument("--obs_size", default = 13, type = int) #observation_size + goal_size
+parser.add_argument("--obs_size", default = 28, type = int) #observation_size + goal_size
 parser.add_argument("--action_size", default = 4, type = int)
 parser.add_argument("--feature_dims", default = 128, type = int)
 parser.add_argument("--goal_size", default = 3, type = int)
@@ -65,7 +65,7 @@ def main():
     os.makedirs(model_path, exist_ok=True)
     writer = SummaryWriter(save_path)
     # agent and env
-    env = gym.make("FetchReach-v1")
+    env = gym.make("FetchPush-v1")
     agent = HER(
         observation_space,
         action_space,
