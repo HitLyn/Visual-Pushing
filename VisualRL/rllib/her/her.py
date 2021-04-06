@@ -406,7 +406,7 @@ class HER:
         self._n_updates += gradient_steps
         # update learning rate
         schedulers = [self.actor_scheduler, self.critic_scheduler, self.ent_scheduler]
-        self._update_learning_rate(schedulers)
+        # self._update_learning_rate(schedulers)
         # TODO write summary to logger here
         writer.add_scalar("train/ent_coef", np.mean(ent_coefs), self._n_updates)
         writer.add_scalar("train/actor_loss", np.mean(actor_losses), self._n_updates)
