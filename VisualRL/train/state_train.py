@@ -20,34 +20,26 @@ parser.add_argument("--obs_size", default = 15, type = int)
 parser.add_argument("--action_size", default = 2, type = int)
 parser.add_argument("--feature_dims", default = 128, type = int)
 parser.add_argument("--goal_size", default = 6, type = int)
-parser.add_argument("--device", default="cpu", type = str)
+parser.add_argument("--device", default="auto", type = str)
 parser.add_argument("--net_class", default="Flatten", type = str)
-parser.add_argument("--min_action", default = -0.5, type = float)
-parser.add_argument("--max_action", default = 0.5, type = float)
-parser.add_argument("--max_episode_steps", default = 40, type = int)
+parser.add_argument("--min_action", default = -1., type = float)
+parser.add_argument("--max_action", default = 1., type = float)
+parser.add_argument("--max_episode_steps", default = 50, type = int)
 parser.add_argument("--train_freq", default = 1, type = int)
 parser.add_argument("--learning_starts", default = 2, type = int)
+parser.add_argument("--learning_rate", default = 0.0003, type = float)
 parser.add_argument("--save_interval", default = 100, type = int)
 parser.add_argument("--train_cycle", default = 1, type = int)
-parser.add_argument("--gradient_steps", default = 40, type = int)
-parser.add_argument("--batch_size", default = 128, type = int)
+parser.add_argument("--gradient_steps", default = 50, type = int)
+parser.add_argument("--batch_size", default = 256, type = int)
 parser.add_argument("--total_episodes", default = 1e6, type = int)
-parser.add_argument("--eval_freq", default = 20, type = int)
-parser.add_argument("--num_eval_episode", default = 10, type = int)
-parser.add_argument("--relative_goal", default = True)
+parser.add_argument("--eval_freq", default = 50, type = int)
+parser.add_argument("--num_eval_episode", default = 20, type = int)
+parser.add_argument("--relative_goal", action = "store_false")
 parser.add_argument("--mp", action = "store_true")
+parser.add_argument("--seed", default = None, type = int)
 args = parser.parse_args()
 
-def count(i, env):
-    # print(env)
-    print(i)
-    # env = gym.make("FetchPush-v1")
-    # embed()
-    # env = make_env()
-    # print(env)
-    env.reset()
-    print('get env')
-    return env
 
 def mp_collect_rollouts(i, seed_list, mp_list, agent, env, writer):
     set_seed_everywhere(seed_list[i])
@@ -116,6 +108,7 @@ def main():
     total_episodes = args.total_episodes
     eval_freq = args.eval_freq
     num_eval_episode = args.num_eval_episode
+    seed = args.seed
 
     device = get_device(args.device)
     # save dir
@@ -127,11 +120,13 @@ def main():
     os.makedirs(model_path, exist_ok=True)
     writer = SummaryWriter(save_path)
     # agent and env
+    set_seed_everywhere(args.seed, using_cuda = device.type == torch.device("cuda").type)
     env = make_env()
     agent = HER(
         observation_space,
         action_space,
         goal_space,
+        env,
         feature_dims,
         min_action,
         max_action,
@@ -139,13 +134,16 @@ def main():
         train_freq,
         train_cycle,
         net_class = args.net_class,
+        gradient_steps=args.gradient_steps,
         save_interval = args.save_interval,
         learning_starts = args.learning_starts,
+        learning_rate = args.learning_rate,
         device = device,
         relative_goal = args.relative_goal,
+        batch_size = args.batch_size,
     )
     # train
-    agent.learn(env, total_episodes, eval_freq, num_eval_episode, writer, model_path, multiprocess = args.mp)
+    agent.learn(total_episodes, eval_freq, num_eval_episode, writer, model_path, multiprocess = args.mp)
     # with torch.no_grad():
     #     tmp_seed_list = np.random.randint(1, 10000, size=20)
     #     # env1 = gym.make("FetchPush-v1")

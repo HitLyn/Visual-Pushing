@@ -68,7 +68,7 @@ class HerReplayBufferTest:
         buffer_["a_goals_"] = buffer_["a_goals"][:, 1:, :] # achieved goal after action
         buffer_["dones"] = self.dones[:self.current_size]
 
-        transitions = self.sample_transitions(buffer_, batch_size)
+        transitions = self.sample_transitions(buffer_, batch_size, True)
 
         return transitions
 
@@ -76,12 +76,13 @@ class HerReplayBufferTest:
         # multiprocess store
         for transition_dict in transition_dict_list:
             self.add_episode_transitions(transition_dict)
+
+
     def sample_transitions(self, buffer_, batch_size, sample_choice = False):
         future_p = 1 - (1./(1 + self.replay_k))
         T = buffer_["actions"].shape[1]
         episode_nums = buffer_["actions"].shape[0]
         if sample_choice:
-            self.episode_lengths = np.ones(batch_size).astype(int) * T
             episode_lengths = np.ones(batch_size).astype(int) * T
             episode_idxs = np.random.randint(0, episode_nums, batch_size)
             her_indexes = np.arange(batch_size)[: int(future_p * batch_size)]
@@ -91,7 +92,7 @@ class HerReplayBufferTest:
             transitions = {key: buffer_[key][episode_idxs, t_samples].copy()
                            for key in buffer_.keys()}
             her_episode_indexes = episode_idxs[her_indexes]
-            transition_indexes = np.random.randint(t_samples[her_indexes] + 1, self.episode_lengths[her_episode_indexes])
+            transition_indexes = np.random.randint(t_samples[her_indexes] + 1, T)
             future_ag = buffer_["a_goals"][her_episode_indexes, transition_indexes].copy()
             transitions["d_goals"][her_indexes] = future_ag
 
