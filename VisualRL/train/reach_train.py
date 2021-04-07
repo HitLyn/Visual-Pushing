@@ -37,6 +37,7 @@ parser.add_argument("--eval_freq", default = 50, type = int)
 parser.add_argument("--num_eval_episode", default = 20, type = int)
 parser.add_argument("--relative_goal", action = "store_false")
 parser.add_argument("--mp", action = "store_true")
+parser.add_argument("--seed", default = None, type = int)
 args = parser.parse_args()
 
 def main():
@@ -55,6 +56,7 @@ def main():
     total_episodes = args.total_episodes
     eval_freq = args.eval_freq
     num_eval_episode = args.num_eval_episode
+    seed = args.seed
 
     device = get_device(args.device)
     # save dir
@@ -65,12 +67,19 @@ def main():
     model_path = os.path.join(save_path, 'her_models')
     os.makedirs(model_path, exist_ok=True)
     writer = SummaryWriter(save_path)
-    # agent and env
+    # set seed for python
+    set_seed_everywhere(args.seed, using_cuda = device.type == torch.device("cuda").type)
     env = gym.make("FetchPush-v1")
+    # set seed for env
+    if seed is not None:
+        env.seed(seed)
+        env.action_space.seed(seed)
+
     agent = HER(
         observation_space,
         action_space,
         goal_space,
+        env,
         feature_dims,
         min_action,
         max_action,
@@ -89,7 +98,7 @@ def main():
     )
     # train
     # embed()
-    agent.learn(env, total_episodes, eval_freq, num_eval_episode, writer, model_path, multiprocess = args.mp)
+    agent.learn(total_episodes, eval_freq, num_eval_episode, writer, model_path, multiprocess = args.mp)
 
 
 if __name__ == '__main__':

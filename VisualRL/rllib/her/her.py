@@ -21,6 +21,7 @@ class HER:
             observation_space,
             action_space,
             goal_space,
+            env,
             feature_dims,
             min_action,
             max_action,
@@ -46,6 +47,7 @@ class HER:
         self.observation_space = observation_space # network size
         self.action_space = action_space
         self.goal_space = goal_space
+        self.env = env
         self.buffer_obs_size = observation_space - goal_space # buffer obs shape = 9
         self.max_episode_steps = max_episode_steps
         self.feature_dims = observation_space if net_class == "Flatten" else feature_dims
@@ -74,7 +76,6 @@ class HER:
         self.num_timesteps = 0
         self._n_updates = 0
 
-        set_seed_everywhere(self.seed)
 
         if test:
             self.rollout_buffer = HerReplayBufferTest(
@@ -292,7 +293,7 @@ class HER:
         self.device = device
         self.policy.to(device)
 
-    def learn(self, env, total_episodes, eval_freq, num_eval_episodes, writer, model_path, multiprocess = False):
+    def learn(self, total_episodes, eval_freq, num_eval_episodes, writer, model_path, multiprocess = False):
         # rollout and train model in turn
         while self.num_collected_episodes < total_episodes:
             if multiprocess:
@@ -303,7 +304,7 @@ class HER:
                     tmp_seed_list = np.random.randint(1, 10000, size=self.num_workers)
                     mp_list = mp.Manager().list()
                     workers = [mp.Process(target=self.mp_collect_rollouts,
-                                          args=(i, tmp_seed_list, mp_list, self.policy, env, writer))
+                                          args=(i, tmp_seed_list, mp_list, self.policy, self.env, writer))
                                for i in range(self.num_workers)]
                     # embed()
                     [worker.start() for worker in workers]
@@ -315,13 +316,13 @@ class HER:
                 self.num_collected_episodes += 1
                 print(f"collecting rollouts with {self.num_workers} workers, episodes {self.num_collected_episodes}")
             else:
-                self.collect_rollouts(env, writer)
+                self.collect_rollouts(self.env, writer)
             if self.num_collected_episodes >= self.learning_starts:
                 # move policy back to gpu
                 # self.policy.to(self.device)
                 self.train(self.gradient_steps, self.batch_size, writer)
                 if self.num_collected_episodes % eval_freq == 0:
-                    self.eval(env, num_eval_episodes, writer)
+                    self.eval(self.env, num_eval_episodes, writer)
                     # save
                 if self.num_collected_episodes % self.save_interval == 0:
                     self.save(model_path, self.num_collected_episodes)
