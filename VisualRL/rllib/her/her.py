@@ -14,6 +14,8 @@ from VisualRL.rllib.her.her_replay_buffer import HerReplayBuffer
 from VisualRL.rllib.her.her_replay_buffer_test import HerReplayBufferTest
 from VisualRL.rllib.common.utils import polyak_update
 
+from robogym.envs.push.push_a3 import make_env
+
 ACTION_SCALE = 1.
 class HER:
     def __init__(
@@ -68,7 +70,7 @@ class HER:
         self.gradient_steps = gradient_steps
         self.train_freq = train_freq
         self.train_cycle = train_cycle
-        self.num_workers = 20
+        self.num_workers = 5
 
         self.dims = self.get_dims()
 
@@ -161,7 +163,7 @@ class HER:
         scaled_action = self.policy.predict(obs_input, determinstic = True).squeeze().cpu().numpy()
         return scaled_action
 
-    def _sample_action(self, observation, achieved_goal, desired_goal, test = False):
+    def _sample_action(self, observation, achieved_goal, desired_goal, cpu = False):
         # reshape and normalize observations for network
         observation = observation.reshape(-1, self.dims['buffer_obs_size'])
         if self.relative_goal:
@@ -169,14 +171,9 @@ class HER:
         else:
             desired_goal = desired_goal.reshape(-1, self.dims['goal'])
         obs_input = np.concatenate([observation, desired_goal], axis=1)
-        obs_input = torch.as_tensor(obs_input).float().to(self.device)
-        if test:
-            scaled_action = self.policy.predict(obs_input, determinstic = False).squeeze().cpu().numpy()
-        else:
-            if self.num_collected_episodes < self.learning_starts:
-                scaled_action = np.random.uniform(self.min_action, self.max_action, size = self.dims['action'])
-            else:
-                scaled_action = self.policy.predict(obs_input, determinstic = False).squeeze().cpu().numpy()
+        obs_input = torch.as_tensor(obs_input).float().to(torch.device("cpu")) if cpu else torch.as_tensor(obs_input).float().to(self.device)
+
+        scaled_action = self.policy.predict(obs_input, determinstic = False).squeeze().cpu().numpy()
         return scaled_action
 
     def collect_rollouts(self, env, writer):
@@ -237,7 +234,8 @@ class HER:
         #TODO write success_rate to logger here
         writer.add_scalar("train/success_rate", success_rate, self._n_updates)
 
-    def mp_collect_rollouts(self, i, seed_list, mp_list, policy, env, writer):
+    def mp_collect_rollouts(self, i, seed_list, mp_list, policy, writer):
+        env = make_env()
         set_seed_everywhere(seed_list[i])
         # stats
         success_stats = []
@@ -258,7 +256,7 @@ class HER:
                 # success = np.zeros(1)
 
                 # step env
-                action= self._sample_action(observation, achieved_goal, desired_goal) # action is squashed to [-1, 1] by tanh function
+                action= self._sample_action(observation, achieved_goal, desired_goal, cpu = True) # action is squashed to [-1, 1] by tanh function
                 obs_dict_new, reward, done, _ = env.step(ACTION_SCALE*action)
                 observation_new[:] = obs_dict_new['observation']
                 achieved_goal_new[:] = obs_dict_new['achieved_goal']
@@ -304,7 +302,7 @@ class HER:
                     tmp_seed_list = np.random.randint(1, 10000, size=self.num_workers)
                     mp_list = mp.Manager().list()
                     workers = [mp.Process(target=self.mp_collect_rollouts,
-                                          args=(i, tmp_seed_list, mp_list, self.policy, self.env, writer))
+                                          args=(i, tmp_seed_list, mp_list, self.policy, writer))
                                for i in range(self.num_workers)]
                     # embed()
                     [worker.start() for worker in workers]
