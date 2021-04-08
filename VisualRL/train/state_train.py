@@ -62,7 +62,7 @@ def mp_collect_rollouts(i, seed_list, mp_list, agent, env, writer):
             # step env
             action = agent._sample_action(observation, achieved_goal,
                                          desired_goal)  # action is squashed to [-1, 1] by tanh function
-            obs_dict_new, reward, done, _ = env.step(0.5 * action)
+            obs_dict_new, reward, done, _ = env.step(action)
             observation_new[:] = obs_dict_new['observation']
             achieved_goal_new[:] = obs_dict_new['achieved_goal']
             success = np.array(obs_dict_new['is_success'])
