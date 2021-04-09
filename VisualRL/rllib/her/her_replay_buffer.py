@@ -78,46 +78,6 @@ class HerReplayBuffer:
 
         return transitions
 
-    # def sample_transitions(self, buffer_, batch_size, device = None):
-    #
-    #     if device is None:
-    #         device = self.device
-    #
-    #     future_p = 1 - (1./(1 + self.replay_k))
-    #     T = buffer_["actions"].shape[1]
-    #     episode_nums = buffer_["actions"].shape[0]
-    #     # select episode and timesteps to use
-    #     episode_idxs = np.random.randint(0, episode_nums, batch_size)
-    #     t_samples = np.random.randint(0, T, batch_size)
-    #     transitions = {key: buffer_[key][episode_idxs, t_samples].copy()
-    #             for key in buffer_.keys()}
-    #
-    #     # substitute in future goals
-    #     her_indexes = np.where(np.random.uniform(size=batch_size) < future_p)
-    #     future_offset = np.random.uniform(size = batch_size) * (T - t_samples)
-    #     future_offset = future_offset.astype(int)
-    #     future_t = (t_samples + 1 + future_offset)[her_indexes]
-    #     # replace goal with achieved goal
-    #     future_ag = buffer_["a_goals"][episode_idxs[her_indexes], future_t].copy()
-    #     transitions["d_goals"][her_indexes] = future_ag
-    #
-    #     # recompute rewards
-    #     reward_params = {k: transitions[k] for k in ["a_goals_", "d_goals"]}
-    #     # embed();exit()
-    #     transitions["rewards"] = self.reward_function(**reward_params).reshape(-1, 1)
-    #     # embed();exit()
-    #     transitions = {k: transitions[k].reshape(batch_size, *transitions[k].shape[1:]) for k in transitions.keys()}
-    #
-    #     # concatenate desired goals with observation together for network
-    #     if self.relative_goal:
-    #         transitions["goal_obs_con"] = np.concatenate([transitions["obses"], transitions["d_goals"] - transitions["a_goals"]], axis = 1)
-    #         transitions["next_goal_obs_con"] = np.concatenate([transitions["next_obses"], transitions["d_goals"] - transitions["a_goals_"]], axis = 1)
-    #
-    #     for key in transitions.keys():
-    #         transitions[key] = torch.as_tensor(transitions[key]).float().to(device)
-    #
-    #     return transitions
-
     def sample_transitions(self, buffer_, batch_size, sample_choice = False):
         future_p = 1 - (1./(1 + self.replay_k))
         T = buffer_["actions"].shape[1]
