@@ -101,13 +101,12 @@ def main():
         with torch.no_grad():
             for t in range(agent.max_episode_steps):
                 embed();exit()
-                env.render()
                 observation_new = np.empty(agent.dims['buffer_obs_size'], np.float32)
                 achieved_goal_new = np.empty(agent.dims['goal'], np.float32)
                 # success = np.zeros(1)
 
                 # step env
-                action = agent._select_action(observation, achieved_goal,
+                action = agent._sample_action(observation, achieved_goal,
                                              desired_goal)  # action is squashed to [-1, 1] by tanh function
                 print(f"action: {t}")
                 obs_dict_new, reward, done, _ = env.step(ACTION_SCALE * action)
@@ -118,6 +117,7 @@ def main():
                 # update states
                 observation[:] = observation_new.copy()
                 achieved_goal[:] = achieved_goal_new.copy()
+                env.render()
 
             episode += 1
             # add transition to replay buffer
