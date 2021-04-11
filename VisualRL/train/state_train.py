@@ -140,6 +140,7 @@ def main():
         learning_rate = args.learning_rate,
         device = device,
         relative_goal = args.relative_goal,
+        goal_type = 'pos',
         batch_size = args.batch_size,
     )
     # train

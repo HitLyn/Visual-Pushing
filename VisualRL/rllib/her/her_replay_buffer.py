@@ -15,6 +15,7 @@ class HerReplayBuffer:
             pos_threshold = 0.05,
             rot_threshold = 0.2,
             relative_goal = True,
+            goal_type = 'pos'
             ):
         self.size_in_transitions = size_in_transitions
         self.size = int(self.size_in_transitions//episode_steps)
@@ -39,6 +40,8 @@ class HerReplayBuffer:
         self.n_transitions_stored = 0
         # her replay params
         self.replay_k = 4
+        # goal reward
+        self.goal_type = goal_type
 
     def full(self):
         return self.current_size == self.size
@@ -138,6 +141,6 @@ class HerReplayBuffer:
             rotation.quat_normalize(rotation.euler2quat(relative_goal["obj_rot"]))
         )
         # success = np.array((pos_distances < self.pos_threshold) * (rot_distances < self.rot_threshold))
-        success = np.array((pos_distances < self.pos_threshold))
+        success = np.array((pos_distances < self.pos_threshold)) if self.goal_type == 'pos' else np.array((pos_distances < self.pos_threshold) * (rot_distances < self.rot_threshold))
         success = success.astype(float)
         return success

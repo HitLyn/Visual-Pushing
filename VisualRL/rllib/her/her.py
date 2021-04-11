@@ -43,7 +43,8 @@ class HER:
             device = None,
             seed = 1,
             relative_goal = True,
-            test = False
+            goal_type = 'pos',
+            test = False,
             ):
 
         self.observation_space = observation_space # network size
@@ -67,6 +68,7 @@ class HER:
         self.device = device
         self.seed = seed
         self.relative_goal = relative_goal
+        self.goal_type = goal_type
         self.gradient_steps = gradient_steps
         self.train_freq = train_freq
         self.train_cycle = train_cycle
@@ -98,6 +100,7 @@ class HER:
                     action_space,
                     device,
                     relative_goal = self.relative_goal,
+                    goal_type = self.goal_type,
                     )
 
         self.feature_extractor = make_feature_extractor(
