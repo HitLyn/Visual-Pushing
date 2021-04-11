@@ -137,6 +137,7 @@ class HerReplayBuffer:
         rot_distances = rotation.quat_magnitude(
             rotation.quat_normalize(rotation.euler2quat(relative_goal["obj_rot"]))
         )
-        success = np.array((pos_distances < self.pos_threshold) * (rot_distances < self.rot_threshold))
+        # success = np.array((pos_distances < self.pos_threshold) * (rot_distances < self.rot_threshold))
+        success = np.array((pos_distances < self.pos_threshold))
         success = success.astype(float)
         return success

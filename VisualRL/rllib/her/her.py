@@ -178,6 +178,7 @@ class HER:
 
     def collect_rollouts(self, env, writer):
         success_stats = []
+        reward_stats = []
         episode = 0
         print(f"collecting rollouts: {self.num_collected_episodes}")
         while episode < self.train_freq:
@@ -189,7 +190,7 @@ class HER:
             achieved_goal[:] = obs_dict['achieved_goal']
             desired_goal[:] = obs_dict['desired_goal']
 
-            obs, a_goals, acts, d_goals, successes, dones = [], [], [], [], [], []
+            obs, a_goals, acts, d_goals, successes, dones, rewards = [], [], [], [], [], [], []
             with torch.no_grad():
                 for t in range(self.max_episode_steps):
                     observation_new = np.empty(self.dims['buffer_obs_size'], np.float32)
@@ -210,6 +211,7 @@ class HER:
                     acts.append(action.copy())
                     d_goals.append(desired_goal.copy())
                     successes.append(success.copy())
+                    rewards.append(reward)
 
                     # update states
                     observation[:] = observation_new.copy()
@@ -222,17 +224,21 @@ class HER:
                 o = np.array(obs).copy(),
                 u = np.array(acts).copy(),
                 g = np.array(d_goals).copy(),
-                ag = np.array(a_goals).copy())
+                ag = np.array(a_goals).copy(),
+                r = np.array(rewards).copy())
             # stats
             episode += 1
             self.num_collected_episodes += 1
             success_stats.append(successes[-1])
+            reward_stats.append(np.mean(rewards))
             # add transition to replay buffer
             self.rollout_buffer.add_episode_transitions(episode_transition)
 
         success_rate = np.mean(np.array(success_stats))
+        mean_reward = np.mean(np.array(reward_stats))
         #TODO write success_rate to logger here
         writer.add_scalar("train/success_rate", success_rate, self._n_updates)
+        writer.add_scalar("train/mean_reward", mean_reward, self._n_updates)
 
     def mp_collect_rollouts(self, i, seed_list, mp_list, policy, writer):
         env = make_env()
@@ -328,7 +334,7 @@ class HER:
 
     def eval(self, env, num_eval_episodes, writer):
         print(f"evaluate after {self.num_collected_episodes} episodes")
-        reward_stats, success_rate_stats = [], []
+        reward_stats, success_rate_stats= [], []
         for episode in range(num_eval_episodes):
             obs_dict = env.reset()
             rewards = []
