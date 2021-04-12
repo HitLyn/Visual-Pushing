@@ -16,10 +16,10 @@ import gym
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--task_name", default="YCB-Pushing")
-parser.add_argument("--obs_size", default = 15, type = int)
-parser.add_argument("--action_size", default = 2, type = int)
+parser.add_argument("--obs_size", default = 28, type = int) #observation_size + goal_size
+parser.add_argument("--action_size", default = 4, type = int)
 parser.add_argument("--feature_dims", default = 128, type = int)
-parser.add_argument("--goal_size", default = 6, type = int)
+parser.add_argument("--goal_size", default = 3, type = int)
 parser.add_argument("--device", default="auto", type = str)
 parser.add_argument("--net_class", default="Flatten", type = str)
 parser.add_argument("--min_action", default = -1., type = float)
@@ -29,23 +29,21 @@ parser.add_argument("--train_freq", default = 1, type = int)
 parser.add_argument("--learning_starts", default = 2, type = int)
 parser.add_argument("--learning_rate", default = 0.0003, type = float)
 parser.add_argument("--save_interval", default = 100, type = int)
-parser.add_argument("--step", default = 32800, type = int)
 parser.add_argument("--train_cycle", default = 1, type = int)
 parser.add_argument("--gradient_steps", default = 50, type = int)
 parser.add_argument("--batch_size", default = 256, type = int)
-parser.add_argument("--total_episodes", default = 1e6, type = int)
+parser.add_argument("--total_episodes", default = 2e5, type = int)
 parser.add_argument("--eval_freq", default = 50, type = int)
-parser.add_argument("--num_eval_episode", default = 10, type = int)
+parser.add_argument("--num_eval_episode", default = 20, type = int)
 parser.add_argument("--relative_goal", action = "store_false")
 parser.add_argument("--mp", action = "store_true")
 parser.add_argument("--seed", default = None, type = int)
-parser.add_argument("--load_weights", default=0, type=int)
 
 args = parser.parse_args()
 args.load_weights = 0
 
 WEIGHT_PATH = "/homeL/cong/HitLyn/Visual-Pushing/log_files/her/04_08-21_05/her_models"
-ACTION_SCALE = 0.3
+ACTION_SCALE = 1.
 def main():
     observation_space = args.obs_size
     action_space = args.action_size
@@ -59,8 +57,8 @@ def main():
     train_cycle = args.train_cycle
 
     device = get_device(args.device)
-    env = make_env()
-    # env = gym.make("FetchPush-v1")
+    # env = make_env()
+    env = gym.make("FetchPush-v1")
     agent = HER(
         observation_space,
         action_space,

@@ -16,7 +16,7 @@ from VisualRL.rllib.common.utils import polyak_update
 
 from robogym.envs.push.push_a3 import make_env
 
-ACTION_SCALE = 1.
+ACTION_SCALE = 0.3
 class HER:
     def __init__(
             self,
@@ -240,7 +240,7 @@ class HER:
         success_rate = np.mean(np.array(success_stats))
         mean_reward = np.mean(np.array(reward_stats))
         #TODO write success_rate to logger here
-        writer.add_scalar("train/success_rate", success_rate, self._n_updates)
+        # writer.add_scalar("train/success_rate", success_rate, self._n_updates)
         writer.add_scalar("train/mean_reward", mean_reward, self._n_updates)
 
     def mp_collect_rollouts(self, i, seed_list, mp_list, policy, writer):

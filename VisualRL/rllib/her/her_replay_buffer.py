@@ -142,5 +142,5 @@ class HerReplayBuffer:
         )
         # success = np.array((pos_distances < self.pos_threshold) * (rot_distances < self.rot_threshold))
         success = np.array((pos_distances < self.pos_threshold)) if self.goal_type == 'pos' else np.array((pos_distances < self.pos_threshold) * (rot_distances < self.rot_threshold))
-        success = success.astype(float)
+        success = success.astype(float) - 1.
         return success
