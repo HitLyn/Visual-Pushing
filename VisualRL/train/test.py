@@ -16,10 +16,10 @@ import gym
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--task_name", default="YCB-Pushing")
-parser.add_argument("--obs_size", default = 15, type = int)
+parser.add_argument("--obs_size", default = 12, type = int)
 parser.add_argument("--action_size", default = 2, type = int)
 parser.add_argument("--feature_dims", default = 128, type = int)
-parser.add_argument("--goal_size", default = 6, type = int)
+parser.add_argument("--goal_size", default = 3, type = int)
 parser.add_argument("--device", default="auto", type = str)
 parser.add_argument("--net_class", default="Flatten", type = str)
 parser.add_argument("--min_action", default = -1., type = float)
@@ -29,7 +29,7 @@ parser.add_argument("--train_freq", default = 1, type = int)
 parser.add_argument("--learning_starts", default = 2, type = int)
 parser.add_argument("--learning_rate", default = 0.0003, type = float)
 parser.add_argument("--save_interval", default = 100, type = int)
-parser.add_argument("--step", default = 4500, type = int)
+parser.add_argument("--step", default = 6200, type = int)
 parser.add_argument("--train_cycle", default = 1, type = int)
 parser.add_argument("--gradient_steps", default = 50, type = int)
 parser.add_argument("--batch_size", default = 256, type = int)
@@ -44,7 +44,7 @@ parser.add_argument("--load_weights", default=0, type=int)
 args = parser.parse_args()
 args.load_weights = 1
 
-WEIGHT_PATH = "/homeL/cong/HitLyn/Visual-Pushing/log_files/her/04_13-13_31/her_models"
+WEIGHT_PATH = "/homeL/cong/HitLyn/Visual-Pushing/log_files/her/04_13-15_39/her_models"
 ACTION_SCALE = 0.7
 def main():
     observation_space = args.obs_size
@@ -103,7 +103,7 @@ def main():
         obs, a_goals, acts, d_goals, successes, dones = [], [], [], [], [], []
         with torch.no_grad():
             for t in range(agent.max_episode_steps):
-                embed();exit()
+                # embed();exit()
                 observation_new = np.empty(agent.dims['buffer_obs_size'], np.float32)
                 achieved_goal_new = np.empty(agent.dims['goal'], np.float32)
                 # success = np.zeros(1)
