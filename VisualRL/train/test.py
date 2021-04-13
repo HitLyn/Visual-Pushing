@@ -29,7 +29,7 @@ parser.add_argument("--train_freq", default = 1, type = int)
 parser.add_argument("--learning_starts", default = 2, type = int)
 parser.add_argument("--learning_rate", default = 0.0003, type = float)
 parser.add_argument("--save_interval", default = 100, type = int)
-parser.add_argument("--step", default = 32800, type = int)
+parser.add_argument("--step", default = 4500, type = int)
 parser.add_argument("--train_cycle", default = 1, type = int)
 parser.add_argument("--gradient_steps", default = 50, type = int)
 parser.add_argument("--batch_size", default = 256, type = int)
@@ -42,10 +42,10 @@ parser.add_argument("--seed", default = None, type = int)
 parser.add_argument("--load_weights", default=0, type=int)
 
 args = parser.parse_args()
-args.load_weights = 0
+args.load_weights = 1
 
-WEIGHT_PATH = "/homeL/cong/HitLyn/Visual-Pushing/log_files/her/04_08-21_05/her_models"
-ACTION_SCALE = 0.3
+WEIGHT_PATH = "/homeL/cong/HitLyn/Visual-Pushing/log_files/her/04_13-13_31/her_models"
+ACTION_SCALE = 0.7
 def main():
     observation_space = args.obs_size
     action_space = args.action_size
@@ -59,6 +59,7 @@ def main():
     train_cycle = args.train_cycle
 
     device = get_device(args.device)
+    # embed();exit()
     env = make_env()
     # env = gym.make("FetchPush-v1")
     agent = HER(
@@ -84,7 +85,7 @@ def main():
     # TODO load model
     if args.load_weights:
         print("loading model ...")
-        agent.load(WEIGHT_PATH, args.step)
+        agent.load(WEIGHT_PATH, args.step, map_location='cuda:0')
 
 
     # test
@@ -108,7 +109,7 @@ def main():
                 # success = np.zeros(1)
 
                 # step env
-                action = agent._sample_action(observation, achieved_goal,
+                action = agent._select_action(observation, achieved_goal,
                                              desired_goal)  # action is squashed to [-1, 1] by tanh function
                 print(f"action: {t}")
                 obs_dict_new, reward, done, _ = env.step(ACTION_SCALE * action)

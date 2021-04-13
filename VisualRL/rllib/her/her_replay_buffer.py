@@ -135,11 +135,12 @@ class HerReplayBuffer:
         # calculate relative goal
         relative_goal = {}
         relative_goal['obj_pos'] = parameters['a_goals_'][:, :3] - parameters['d_goals'][:, :3]
-        relative_goal['obj_rot'] = parameters['a_goals_'][:, 3:] - parameters['d_goals'][:, 3:]
+        # relative_goal['obj_rot'] = parameters['a_goals_'][:, 3:] - parameters['d_goals'][:, 3:]
         pos_distances = np.linalg.norm(relative_goal["obj_pos"], axis=-1)
-        rot_distances = rotation.quat_magnitude(
-            rotation.quat_normalize(rotation.euler2quat(relative_goal["obj_rot"]))
-        )
+        # embed();exit()
+        # rot_distances = rotation.quat_magnitude(
+        #     rotation.quat_normalize(rotation.euler2quat(relative_goal["obj_rot"]))
+        # )
         # success = np.array((pos_distances < self.pos_threshold) * (rot_distances < self.rot_threshold))
         success = np.array((pos_distances < self.pos_threshold)) if self.goal_type == 'pos' else np.array((pos_distances < self.pos_threshold) * (rot_distances < self.rot_threshold))
         success = success.astype(float) - 1.

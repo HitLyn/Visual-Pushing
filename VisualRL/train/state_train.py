@@ -16,10 +16,10 @@ from robogym.envs.push.push_env import make_env
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--task_name", default="YCB-Pushing")
-parser.add_argument("--obs_size", default = 15, type = int)
+parser.add_argument("--obs_size", default = 12, type = int)# obj_pos 6 + gripper pos 3 + goal_pos 3
 parser.add_argument("--action_size", default = 2, type = int)
 parser.add_argument("--feature_dims", default = 128, type = int)
-parser.add_argument("--goal_size", default = 6, type = int)
+parser.add_argument("--goal_size", default = 3, type = int)#goal_pos 3
 parser.add_argument("--device", default="auto", type = str)
 parser.add_argument("--net_class", default="Flatten", type = str)
 parser.add_argument("--min_action", default = -1., type = float)

@@ -16,7 +16,7 @@ from VisualRL.rllib.common.utils import polyak_update
 
 from robogym.envs.push.push_a3 import make_env
 
-ACTION_SCALE = 0.3
+ACTION_SCALE = 0.7
 class HER:
     def __init__(
             self,
@@ -433,5 +433,5 @@ class HER:
     def save(self, path, step):
         torch.save(self.policy.state_dict(), "%s/her_%s.pt" % (path, step))
 
-    def load(self, path, step):
-        self.policy.load_state_dict(torch.load("%s/her_%s.pt" % (path, step)))
+    def load(self, path, step, map_location = None):
+        self.policy.load_state_dict(torch.load("%s/her_%s.pt" % (path, step), map_location = map_location))
