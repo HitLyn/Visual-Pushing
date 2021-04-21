@@ -83,6 +83,11 @@ class VAE(nn.Module):
         x_reconstruction = self.decode(z)
         return x_reconstruction, z, mu, logvar
 
+    def predict(self, x):
+        z, mu, logvar = self.encode(x)
+        predict = self.decode(mu)
+        return predict
+
     def save(self, path, step):
         torch.save(self.state_dict(), '%s/vae_%s.pt' % (path, step))
 

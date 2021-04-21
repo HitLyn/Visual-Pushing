@@ -19,9 +19,9 @@ RESULTS_SAVE_PATH = os.path.join(os.environ["VISUAL_PUSHING_HOME"], "results/vae
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--batch-size', type = int, default = 64)
-parser.add_argument('--epochs', type = int, default = 60)
+parser.add_argument('--epochs', type = int, default = 200)
 parser.add_argument('--seed', type = int, default = 1)
-parser.add_argument('--eval_freq', type = int, default = 10)
+parser.add_argument('--eval_freq', type = int, default = 5)
 parser.add_argument('--device', type = str, default = 'auto')
 args = parser.parse_args()
 
