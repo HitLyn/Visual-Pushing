@@ -18,11 +18,16 @@ model.load("/homeL/cong/HitLyn/Visual-Pushing/results/vae/04_21-15_34/vae_model"
 window = tk.Tk()
 window.title("VAE Latent Space")
 
-frame = tk.Frame(master = window, width = 900, height = 750)
+frame = tk.Frame(master = window, width = 900, height = 450)
 frame.pack()
 
 l1 = tk.Label(master = frame, text = '')
-l1.place(x = 150, y = 700)
+l1.config(font=("Courier", 14))
+l1.place(x = 60, y = 350)
+
+l2 = tk.Label(master = frame, text = '')
+l2.config(font=("Courier", 14))
+l2.place(x = 590, y = 350)
 
 # image = Image.open("/home/lyn/0001.png").resize([100, 100])
 # image = ImageTk.PhotoImage(image)
@@ -89,7 +94,8 @@ def select_image():
     global latent_value
     n = np.random.randint(1,10000)
     file_name = os.path.join(IMAGE_PATH, "{:0>5d}.png".format(n))
-    l1.configure(text = "{:0>5d}.png".format(n))
+    l1.configure(text = "input image: {:0>5d}.png".format(n))
+    l2.configure(text="reconstruct image".format(n))
     image = Image.open(file_name)
     image_tk = ImageTk.PhotoImage(image.resize([256,256]))
     # image_tk = ImageTk.PhotoImage(image)
@@ -102,7 +108,7 @@ def select_image():
         image_recon, z, mu, logvar = model(tensor_image)
         image_recon = model.predict(tensor_image)
     latent_value = mu[0].cpu().numpy()
-    print(latent_value)
+    # print(latent_value)
     show_out_put(latent_value)
 
     # reset values
@@ -121,36 +127,23 @@ def select_image():
     show_out_put(latent_value)
     # print(latent_value)
 
-    # show_out_put(latent_value)
-
-    # print(s1.get(), s2.get(), s3.get(), s4.get(), s5.get(), s6.get())
-
-
-    # image_recon_pil = transforms.ToPILImage()(image_recon.squeeze().cpu())
-    # image_recon_tk = ImageTk.PhotoImage(image_recon_pil.resize([256,256]))
-    # # image_recon_tk = ImageTk.PhotoImage(image_recon_pil)
-    # label_output.configure(image = image_recon_tk)
-    # label_output.photo = image_recon_tk
-
-
-
 
 # slider
 s1 = tk.Scale(window, from_ = -SCALE_RANGE, to= SCALE_RANGE, orient=tk.HORIZONTAL, length = 150, resolution = 0.01, command = set_s1_value)
 s1.place(x = 350, y = 50)
 s2 = tk.Scale(window, from_ = -SCALE_RANGE, to= SCALE_RANGE, orient=tk.HORIZONTAL, length = 150, resolution = 0.01, command = set_s2_value)
-s2.place(x = 350, y = 150)
+s2.place(x = 350, y = 90)
 s3 = tk.Scale(window, from_ = -SCALE_RANGE, to= SCALE_RANGE, orient=tk.HORIZONTAL, length = 150, resolution = 0.01, command = set_s3_value)
-s3.place(x = 350, y = 250)
+s3.place(x = 350, y = 130)
 s4 = tk.Scale(window, from_ = -SCALE_RANGE, to= SCALE_RANGE, orient=tk.HORIZONTAL, length = 150, resolution = 0.01, command = set_s4_value)
-s4.place(x = 350, y = 350)
+s4.place(x = 350, y = 170)
 s5 = tk.Scale(window, from_ = -SCALE_RANGE, to= SCALE_RANGE, orient=tk.HORIZONTAL, length = 150, resolution = 0.01, command = set_s5_value)
-s5.place(x = 350, y = 450)
+s5.place(x = 350, y = 210)
 s6 = tk.Scale(window, from_ = -SCALE_RANGE, to= SCALE_RANGE, orient=tk.HORIZONTAL, length = 150, resolution = 0.01, command = set_s6_value)
-s6.place(x = 350, y = 550)
+s6.place(x = 350, y = 250)
 # button
-button = tk.Button(frame, text = "random image", command = select_image)
-button.place(x = 350, y = 650)
+button = tk.Button(frame, text = "click me", command = select_image, font=("Courier", 14))
+button.place(x = 370, y = 350)
 
 
 
