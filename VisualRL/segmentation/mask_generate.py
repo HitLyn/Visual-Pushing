@@ -2,8 +2,9 @@ import cv2
 import matplotlib.pyplot as plt
 import os
 import numpy as np
+from IPython import embed
 
-IMAGE_PATH = "/homeL/cong/HitLyn/Visual-Pushing/images/red_original"
+IMAGE_PATH = "/homeL/cong/HitLyn/Visual-Pushing/images/red_simple_objects"
 SAVE_PATH = "/homeL/cong/HitLyn/Visual-Pushing/images/masks"
 
 for i in range(10000):
@@ -18,6 +19,7 @@ for i in range(10000):
     crop_mask = mask[200:, 100:400]
     crop_mask = cv2.resize(crop_mask, (64, 64))
     save_name = os.path.join(SAVE_PATH, "{:0>5d}.png".format(i))
+    # embed();exit()
     cv2.imwrite(save_name, crop_mask)
 
 

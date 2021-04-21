@@ -86,6 +86,9 @@ class VAE(nn.Module):
     def save(self, path, step):
         torch.save(self.state_dict(), '%s/vae_%s.pt' % (path, step))
 
+    def load(self, path, step, map_location = None):
+        self.load_state_dict(torch.load("%s/vae_%s.pt" % (path, step), map_location=map_location))
+
 
 
 if __name__ == '__main__':

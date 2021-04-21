@@ -7,11 +7,12 @@ import torch
 from torchvision import transforms
 from IPython import embed
 
-IMAGE_PATH = "/home/lyn"
+IMAGE_PATH = "/homeL/cong/HitLyn/Visual-Pushing/images/masks"
 
-device = torch.device('cuda')
+device = torch.device('cuda:1')
 # global model
 model = VAE(device = device, image_channels = 3, h_dim = 1024, z_dim = 4)
+model.load("/homeL/cong/HitLyn/Visual-Pushing/results/vae/04_21-11_38/vae_model", 59, map_location='cuda:1')
 
 window = tk.Tk()
 window.title("VAE Latent Space")
@@ -79,8 +80,8 @@ def show_out_put(mu):
 
 def select_image():
     # print('selecting new')
-    n = np.random.randint(1,4)
-    file_name = os.path.join(IMAGE_PATH, "{:0>4d}.png".format(n))
+    n = np.random.randint(1,10000)
+    file_name = os.path.join(IMAGE_PATH, "{:0>5d}.png".format(n))
     image = Image.open(file_name).resize([64, 64])
     image_tk = ImageTk.PhotoImage(image)
     label_input.configure(image = image_tk)

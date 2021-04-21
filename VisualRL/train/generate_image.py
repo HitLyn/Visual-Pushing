@@ -91,7 +91,7 @@ def main():
     # test
     episode = 0
     success_stats = []
-    while episode < 100:
+    while episode < 1000:
         obs_dict = env.reset()
         start_time = time.time()
         observation = np.empty(agent.dims['buffer_obs_size'], np.float32)
@@ -100,15 +100,14 @@ def main():
         observation[:] = obs_dict['observation']
         achieved_goal[:] = obs_dict['achieved_goal']
         desired_goal[:] = obs_dict['desired_goal']
-        while time.time() - start_time < 1.5:
-            with env.mujoco_simulation.hide_target():
-                env.render()
+        # while time.time() - start_time < 1.5:
+        #     env.render()
 
         obs, a_goals, acts, d_goals, successes, dones = [], [], [], [], [], []
         with torch.no_grad():
-            for t in range(40):
+            for t in range(20):
                 # embed();exit()
-                # name = '/homeL/cong/HitLyn/Visual-Pushing/images/red_simple_objects/' + "{:0>5d}.png".format(10 * episode + t)
+                name = '/homeL/cong/HitLyn/Visual-Pushing/images/red_simple_objects/' + "{:0>5d}.png".format(20 * episode + t)
 
                 observation_new = np.empty(agent.dims['buffer_obs_size'], np.float32)
                 achieved_goal_new = np.empty(agent.dims['goal'], np.float32)
@@ -126,14 +125,17 @@ def main():
                 # update states
                 observation[:] = observation_new.copy()
                 achieved_goal[:] = achieved_goal_new.copy()
+                # env.render()
                 with env.mujoco_simulation.hide_target():
-                    env.render()
-                # array = env.render(mode="rgb_array")
-                # plt.imsave(name, array, format='png')
+                    array = env.render(mode="rgb_array")
+                plt.imsave(name, array, format='png')
 
             episode += 1
             # add transition to replay buffer
             # env.close()
 
 if __name__ == '__main__':
+    from mujoco_py import GlfwContext
+    import matplotlib.pyplot as plt
+    GlfwContext(offscreen=True)  # Create a window to init GLFW.
     main()
