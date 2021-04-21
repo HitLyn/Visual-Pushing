@@ -20,3 +20,4 @@ eggs/
 
 ## python
 __pycache__/
+*.pyc
