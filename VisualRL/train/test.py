@@ -29,7 +29,7 @@ parser.add_argument("--train_freq", default = 1, type = int)
 parser.add_argument("--learning_starts", default = 2, type = int)
 parser.add_argument("--learning_rate", default = 0.0003, type = float)
 parser.add_argument("--save_interval", default = 100, type = int)
-parser.add_argument("--step", default = 6200, type = int)
+parser.add_argument("--step", default = 65400, type = int)
 parser.add_argument("--train_cycle", default = 1, type = int)
 parser.add_argument("--gradient_steps", default = 50, type = int)
 parser.add_argument("--batch_size", default = 256, type = int)
@@ -44,7 +44,7 @@ parser.add_argument("--load_weights", default=0, type=int)
 args = parser.parse_args()
 args.load_weights = 1
 
-WEIGHT_PATH = "/homeL/cong/HitLyn/Visual-Pushing/log_files/her/04_13-15_39/her_models"
+WEIGHT_PATH = "/homeL/cong/HitLyn/Visual-Pushing/log_files/her/04_15-19_07/her_models"
 ACTION_SCALE = 0.7
 def main():
     observation_space = args.obs_size
@@ -93,12 +93,15 @@ def main():
     success_stats = []
     while episode < 100:
         obs_dict = env.reset()
+        start_time = time.time()
         observation = np.empty(agent.dims['buffer_obs_size'], np.float32)
         achieved_goal = np.empty(agent.dims['goal'], np.float32)
         desired_goal = np.empty(agent.dims['goal'], np.float32)
         observation[:] = obs_dict['observation']
         achieved_goal[:] = obs_dict['achieved_goal']
         desired_goal[:] = obs_dict['desired_goal']
+        while time.time() - start_time < 1.5:
+            env.render()
 
         obs, a_goals, acts, d_goals, successes, dones = [], [], [], [], [], []
         with torch.no_grad():
