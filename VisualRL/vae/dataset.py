@@ -7,7 +7,7 @@ from torch.utils.data.sampler import BatchSampler
 
 
 def image_loader(path):
-    return Image.open(path).convert('RGB')
+    return Image.open(path)
 
 class VaeImageDataset(Dataset):
     def __init__(self, base_path, n_samples = 1e4, train = True, split = False, transform = None, loader = image_loader):

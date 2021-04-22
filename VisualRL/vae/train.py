@@ -46,7 +46,7 @@ def main():
     test_loader = torch.utils.data.DataLoader(test_dataset, batch_size = args.batch_size, shuffle = True, pin_memory = False, num_workers = 2)
     print('\nall data loader! \n')
     # load model
-    model = VAE(device = device, image_channels = 3, h_dim = 1024, z_dim = 6)
+    model = VAE(device = device, image_channels = 1, h_dim = 1024, z_dim = 6)
     optimizer = optim.Adam(model.parameters())
     criterion = nn.MSELoss()
 

@@ -12,13 +12,13 @@ SCALE_RANGE = 10
 
 device = torch.device('cuda:1')
 # global model
-model = VAE(device = device, image_channels = 3, h_dim = 1024, z_dim = 6)
-model.load("/homeL/cong/HitLyn/Visual-Pushing/results/vae/04_21-15_34/vae_model", 99, map_location='cuda:1')
+model = VAE(device = device, image_channels = 1, h_dim = 1024, z_dim = 6)
+model.load("/homeL/cong/HitLyn/Visual-Pushing/results/vae/04_22-12_49/vae_model", 199, map_location='cuda:1')
 
 window = tk.Tk()
 window.title("VAE Latent Space")
 
-frame = tk.Frame(master = window, width = 900, height = 450)
+frame = tk.Frame(master = window, width = 1200, height = 450)
 frame.pack()
 
 l1 = tk.Label(master = frame, text = '')
@@ -27,15 +27,28 @@ l1.place(x = 60, y = 350)
 
 l2 = tk.Label(master = frame, text = '')
 l2.config(font=("Courier", 14))
-l2.place(x = 590, y = 350)
+l2.place(x = 880, y = 350)
 
-# image = Image.open("/home/lyn/0001.png").resize([100, 100])
-# image = ImageTk.PhotoImage(image)
+l3 = tk.Label(master = frame, text = 'latent features')
+l3.config(font=("Courier", 14))
+l3.place(x = 490, y = 10)
+
+encoder_image = Image.open("/homeL/cong/Downloads/encoder.png").resize([100, 150])
+encoder_image = ImageTk.PhotoImage(encoder_image)
+l4 = tk.Label(master = frame, text = 'latent features')
+l4.config(image=encoder_image)
+l4.place(x = 350, y = 120)
+decoder_image = Image.open("/homeL/cong/Downloads/decoder.png").resize([100, 150])
+decoder_image = ImageTk.PhotoImage(decoder_image)
+l5 = tk.Label(master = frame, text = 'latent features')
+l5.config(image = decoder_image)
+l5.place(x = 700, y = 120)
+
 label_input = tk.Label(master = frame)
 label_input.place(x = 50, y = 50)
 
 label_output = tk.Label(master = frame)
-label_output.place(x = 550, y = 50)
+label_output.place(x = 850, y = 50)
 
 def set_s1_value(val):
     # l1.configure(text = val)
@@ -97,12 +110,13 @@ def select_image():
     l1.configure(text = "input image: {:0>5d}.png".format(n))
     l2.configure(text="reconstruct image".format(n))
     image = Image.open(file_name)
+    # embed();exit()
     image_tk = ImageTk.PhotoImage(image.resize([256,256]))
     # image_tk = ImageTk.PhotoImage(image)
     label_input.configure(image = image_tk)
     label_input.photo = image_tk
     # reset slider
-    tensor_image = transforms.ToTensor()(transforms.Resize(64)(image.convert("RGB"))).unsqueeze(0).to(device)
+    tensor_image = transforms.ToTensor()(transforms.Resize(64)(image)).unsqueeze(0).to(device)
     # embed()
     with torch.no_grad():
         image_recon, z, mu, logvar = model(tensor_image)
@@ -130,20 +144,20 @@ def select_image():
 
 # slider
 s1 = tk.Scale(window, from_ = -SCALE_RANGE, to= SCALE_RANGE, orient=tk.HORIZONTAL, length = 150, resolution = 0.01, command = set_s1_value)
-s1.place(x = 350, y = 50)
+s1.place(x = 500, y = 50)
 s2 = tk.Scale(window, from_ = -SCALE_RANGE, to= SCALE_RANGE, orient=tk.HORIZONTAL, length = 150, resolution = 0.01, command = set_s2_value)
-s2.place(x = 350, y = 90)
+s2.place(x = 500, y = 90)
 s3 = tk.Scale(window, from_ = -SCALE_RANGE, to= SCALE_RANGE, orient=tk.HORIZONTAL, length = 150, resolution = 0.01, command = set_s3_value)
-s3.place(x = 350, y = 130)
+s3.place(x = 500, y = 130)
 s4 = tk.Scale(window, from_ = -SCALE_RANGE, to= SCALE_RANGE, orient=tk.HORIZONTAL, length = 150, resolution = 0.01, command = set_s4_value)
-s4.place(x = 350, y = 170)
+s4.place(x = 500, y = 170)
 s5 = tk.Scale(window, from_ = -SCALE_RANGE, to= SCALE_RANGE, orient=tk.HORIZONTAL, length = 150, resolution = 0.01, command = set_s5_value)
-s5.place(x = 350, y = 210)
+s5.place(x = 500, y = 210)
 s6 = tk.Scale(window, from_ = -SCALE_RANGE, to= SCALE_RANGE, orient=tk.HORIZONTAL, length = 150, resolution = 0.01, command = set_s6_value)
-s6.place(x = 350, y = 250)
+s6.place(x = 500, y = 250)
 # button
-button = tk.Button(frame, text = "click me", command = select_image, font=("Courier", 14))
-button.place(x = 370, y = 350)
+button = tk.Button(frame, text = "random image", command = select_image, font=("Courier", 14))
+button.place(x = 495, y = 350)
 
 
 
