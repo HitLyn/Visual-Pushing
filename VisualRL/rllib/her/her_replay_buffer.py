@@ -14,8 +14,10 @@ class HerReplayBuffer:
             device,
             pos_threshold = 0.05,
             rot_threshold = 0.2,
+            latent_threshold = 0.5,
             relative_goal = True,
-            goal_type = 'pos'
+            goal_type = 'pos',
+            ground_truth = False,
             ):
         self.size_in_transitions = size_in_transitions
         self.size = int(self.size_in_transitions//episode_steps)
@@ -27,6 +29,7 @@ class HerReplayBuffer:
         self.pos_threshold = pos_threshold
         self.rot_threshold = rot_threshold
         self.relative_goal = relative_goal
+        self.latent_threshold = latent_threshold
 
         # buffer
         self.obses = np.empty([self.size, self.episode_steps + 1, self.obs_shape], np.float32)
@@ -42,6 +45,7 @@ class HerReplayBuffer:
         self.replay_k = 4
         # goal reward
         self.goal_type = goal_type
+        self.ground_truth = ground_truth
 
     def full(self):
         return self.current_size == self.size
@@ -134,14 +138,19 @@ class HerReplayBuffer:
     def reward_function(self, **parameters):
         # calculate relative goal
         relative_goal = {}
-        relative_goal['obj_pos'] = parameters['a_goals_'][:, :3] - parameters['d_goals'][:, :3]
+        if self.ground_truth:
+            relative_goal['obj_pos'] = parameters['a_goals_'][:, :3] - parameters['d_goals'][:, :3]
+            pos_distances = np.linalg.norm(relative_goal["obj_pos"], axis=-1)
+            success = np.array((pos_distances < self.pos_threshold))
+        else:
+            relative_goal['obj_latent'] = parameters['a_goals_'] - parameters['d_goals']
+            latent_distances = np.linalg.norm(relative_goal["obj_latent"], axis=-1)
+            success = np.array((latent_distances < self.latent_threshold))
         # relative_goal['obj_rot'] = parameters['a_goals_'][:, 3:] - parameters['d_goals'][:, 3:]
-        pos_distances = np.linalg.norm(relative_goal["obj_pos"], axis=-1)
         # embed();exit()
         # rot_distances = rotation.quat_magnitude(
         #     rotation.quat_normalize(rotation.euler2quat(relative_goal["obj_rot"]))
         # )
-        # success = np.array((pos_distances < self.pos_threshold) * (rot_distances < self.rot_threshold))
-        success = np.array((pos_distances < self.pos_threshold)) if self.goal_type == 'pos' else np.array((pos_distances < self.pos_threshold) * (rot_distances < self.rot_threshold))
+        # success = np.array((pos_distances < self.pos_threshold)) if self.goal_type == 'pos' else np.array((pos_distances < self.pos_threshold) * (rot_distances < self.rot_threshold))
         success = success.astype(float) - 1.
         return success

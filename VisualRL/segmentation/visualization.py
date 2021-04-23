@@ -13,7 +13,7 @@ SCALE_RANGE = 10
 device = torch.device('cuda:1')
 # global model
 model = VAE(device = device, image_channels = 1, h_dim = 1024, z_dim = 6)
-model.load("/homeL/cong/HitLyn/Visual-Pushing/results/vae/04_22-12_49/vae_model", 199, map_location='cuda:1')
+model.load("/homeL/cong/HitLyn/Visual-Pushing/results/vae/04_22-12_49/vae_model", 100, map_location='cuda:1')
 
 window = tk.Tk()
 window.title("VAE Latent Space")
