@@ -4,12 +4,13 @@ import os
 import numpy as np
 from IPython import embed
 
-IMAGE_PATH = "/homeL/cong/HitLyn/Visual-Pushing/images/red_simple_objects"
-SAVE_PATH = "/homeL/cong/HitLyn/Visual-Pushing/images/masks"
+IMAGE_PATH = "/homeL/cong/HitLyn/Visual-Pushing/images/only_objects"
+SAVE_PATH = "/homeL/cong/HitLyn/Visual-Pushing/images/only_objects_masks"
 
-for i in range(10000):
+for i in range(20000):
     file_name = os.path.join(IMAGE_PATH, "{:0>5d}.png".format(i))
-    image = cv2.resize(cv2.imread(file_name)[200:, 100:400, :], (64, 64))
+    # image = cv2.resize(cv2.imread(file_name)[200:, 100:400, :], (64, 64)) # with crop
+    image = cv2.resize(cv2.imread(file_name), (64, 64))
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     image = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
 

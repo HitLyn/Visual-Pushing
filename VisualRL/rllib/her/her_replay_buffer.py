@@ -14,7 +14,7 @@ class HerReplayBuffer:
             device,
             pos_threshold = 0.05,
             rot_threshold = 0.2,
-            latent_threshold = 0.5,
+            latent_threshold = 1.,
             relative_goal = True,
             goal_type = 'pos',
             ground_truth = False,

@@ -14,7 +14,7 @@ from VisualRL.vae.model import VAE
 from VisualRL.vae.dataset import VaeImageDataset
 
 
-DATA_SET_PATH = os.path.join(os.environ["VISUAL_PUSHING_HOME"], "images/masks")
+DATA_SET_PATH = os.path.join(os.environ["VISUAL_PUSHING_HOME"], "images/only_objects_masks")
 RESULTS_SAVE_PATH = os.path.join(os.environ["VISUAL_PUSHING_HOME"], "results/vae")
 
 parser = argparse.ArgumentParser()

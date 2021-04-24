@@ -7,13 +7,16 @@ import torch
 from torchvision import transforms
 from IPython import embed
 
-IMAGE_PATH = "/homeL/cong/HitLyn/Visual-Pushing/images/masks"
+IMAGE_PATH = "/homeL/cong/HitLyn/Visual-Pushing/images/only_objects_masks"
 SCALE_RANGE = 10
 
 device = torch.device('cuda:1')
 # global model
 model = VAE(device = device, image_channels = 1, h_dim = 1024, z_dim = 6)
-model.load("/homeL/cong/HitLyn/Visual-Pushing/results/vae/04_22-12_49/vae_model", 100, map_location='cuda:1')
+model.load("/homeL/cong/HitLyn/Visual-Pushing/results/vae/04_24-13_28/vae_model", 140, map_location='cuda:1')
+
+random_id = 1
+
 
 window = tk.Tk()
 window.title("VAE Latent Space")
@@ -53,39 +56,45 @@ label_output.place(x = 850, y = 50)
 def set_s1_value(val):
     # l1.configure(text = val)
     # print("latent_value", latent_value)
-    mu = latent_value.copy()
+    # mu = latent_value.copy()
+    mu = latent_value
     mu[0] = val
     show_out_put(mu)
     # print(latent_value)
 
 def set_s2_value(val):
     # l1.configure(text = val)
-    mu = latent_value.copy()
+    # mu = latent_value.copy()
+    mu = latent_value
     mu[1] = val
     show_out_put(mu)
 
 def set_s3_value(val):
     # l1.configure(text = val)
-    mu = latent_value.copy()
+    # mu = latent_value.copy()
+    mu = latent_value
     mu[2] = val
     show_out_put(mu)
 
 def set_s4_value(val):
     # l1.configure(text = val)
-    mu = latent_value.copy()
+    # mu = latent_value.copy()
+    mu = latent_value
     mu[3] = val
     show_out_put(mu)
 
 def set_s5_value(val):
     # l1.configure(text = val)
-    mu = latent_value.copy()
+    # mu = latent_value.copy()
+    mu = latent_value
     # embed()
     mu[4] = val
     show_out_put(mu)
 
 def set_s6_value(val):
     # l1.configure(text = val)
-    mu = latent_value.copy()
+    # mu = latent_value.copy()
+    mu = latent_value
     mu[5] = val
     show_out_put(mu)
 
@@ -102,13 +111,11 @@ def show_out_put(mu):
     # print('update output image...')
 
 
-def select_image():
-    # print('selecting new')
+def show_image(id):
     global latent_value
-    n = np.random.randint(1,10000)
-    file_name = os.path.join(IMAGE_PATH, "{:0>5d}.png".format(n))
-    l1.configure(text = "input image: {:0>5d}.png".format(n))
-    l2.configure(text="reconstruct image".format(n))
+    file_name = os.path.join(IMAGE_PATH, "{:0>5d}.png".format(id))
+    l1.configure(text = "input image: {:0>5d}.png".format(id))
+    l2.configure(text="reconstruct image".format(id))
     image = Image.open(file_name)
     # embed();exit()
     image_tk = ImageTk.PhotoImage(image.resize([256,256]))
@@ -141,6 +148,21 @@ def select_image():
     show_out_put(latent_value)
     # print(latent_value)
 
+def select_image():
+    # print('selecting new')
+    global random_id
+    random_id = np.random.randint(18000, 19000)
+    show_image(random_id)
+
+def next_image():
+    global random_id
+    random_id += 1
+    show_image(random_id)
+
+def last_image():
+    global random_id
+    random_id -= 1
+    show_image(random_id)
 
 # slider
 s1 = tk.Scale(window, from_ = -SCALE_RANGE, to= SCALE_RANGE, orient=tk.HORIZONTAL, length = 150, resolution = 0.01, command = set_s1_value)
@@ -158,16 +180,9 @@ s6.place(x = 500, y = 250)
 # button
 button = tk.Button(frame, text = "random image", command = select_image, font=("Courier", 14))
 button.place(x = 495, y = 350)
-
-
-
-
-
-
-
-
-
-
-
+button = tk.Button(frame, text = "next image", command = next_image, font=("Courier", 14))
+button.place(x = 505, y = 400)
+button = tk.Button(frame, text = "last image", command = last_image, font=("Courier", 14))
+button.place(x = 505, y = 300)
 
 window.mainloop()
