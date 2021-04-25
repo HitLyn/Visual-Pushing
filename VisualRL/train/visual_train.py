@@ -39,6 +39,7 @@ parser.add_argument("--eval_freq", default = 50, type = int)
 parser.add_argument("--num_eval_episode", default = 20, type = int)
 parser.add_argument("--relative_goal", action = "store_false")
 parser.add_argument("--dense_reward", action = "store_true")
+parser.add_argument("--use_ground_truth_reward", action = "store_false")
 parser.add_argument("--mp", action = "store_true")
 parser.add_argument("--seed", default = None, type = int)
 args = parser.parse_args()
@@ -145,7 +146,8 @@ def main():
         relative_goal = args.relative_goal,
         goal_type = 'pos',
         batch_size = args.batch_size,
-        dense_reward=args.dense_reward
+        dense_reward=args.dense_reward,
+        use_ground_truth_reward = args.use_ground_truth_reward,
     )
     # train
     agent.learn(total_episodes, eval_freq, num_eval_episode, writer, model_path, multiprocess = args.mp)

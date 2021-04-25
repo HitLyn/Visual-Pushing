@@ -47,6 +47,7 @@ class HER:
             ground_truth = False,
             test = False,
             dense_reward = False,
+            use_ground_truth_reward = True,
             ):
 
         self.observation_space = observation_space # network size
@@ -73,6 +74,7 @@ class HER:
         self.goal_type = goal_type
         self.ground_truth = ground_truth
         self.dense_reward = dense_reward
+        self.use_ground_truth_reward = use_ground_truth_reward
         self.gradient_steps = gradient_steps
         self.train_freq = train_freq
         self.train_cycle = train_cycle
@@ -84,6 +86,9 @@ class HER:
         self.num_timesteps = 0
         self._n_updates = 0
 
+        if not self.ground_truth:
+            self.gt_obs_shape = 9 #object pos and rot + gripper pos
+            self.gt_goal_shape = 3 #object pos
 
         if test:
             self.rollout_buffer = HerReplayBufferTest(
@@ -107,6 +112,9 @@ class HER:
                     goal_type = self.goal_type,
                     ground_truth = self.ground_truth,
                     dense_reward = self.dense_reward,
+                    use_ground_truth_reward = self.use_ground_truth_reward,
+                    gt_obs_shape = self.gt_obs_shape,
+                    gt_goal_shape = self.gt_goal_shape,
                     )
 
         self.feature_extractor = make_feature_extractor(
@@ -155,9 +163,11 @@ class HER:
     def get_dims(self):
         self.dims = dict()
         self.dims['observation_space'] = self.observation_space
+        self.dims['ground_truth_obs_size'] = 9
         self.dims['buffer_obs_size'] = self.buffer_obs_size
         self.dims['action'] = self.action_space
         self.dims['goal'] = self.goal_space
+        self.dims['ground_truth_goal'] = 3
         return self.dims
 
     def _select_action(self, observation, achieved_goal, desired_goal):
@@ -198,19 +208,31 @@ class HER:
             observation[:] = obs_dict['observation']
             achieved_goal[:] = obs_dict['achieved_goal']
             desired_goal[:] = obs_dict['desired_goal']
+            if not self.ground_truth:
+                observation_gt = np.empty(self.dims['ground_truth_obs_size'], np.float32)
+                achieved_goal_gt = np.empty(self.dims['ground_truth_goal'], np.float32)
+                desired_goal_gt = np.empty(self.dims['ground_truth_goal'], np.float32)
+                observation_gt[:] = obs_dict['observation_gt']
+                achieved_goal_gt[:] = obs_dict['achieved_goal_gt']
+                desired_goal_gt[:] = obs_dict['desired_goal_gt']
 
             obs, a_goals, acts, d_goals, successes, dones, rewards = [], [], [], [], [], [], []
+            if not self.ground_truth:
+                obs_gt, a_goals_gt, d_goals_gt = [], [], []
             with torch.no_grad():
                 for t in range(self.max_episode_steps):
                     observation_new = np.empty(self.dims['buffer_obs_size'], np.float32)
                     achieved_goal_new = np.empty(self.dims['goal'], np.float32)
-                    # success = np.zeros(1)
-
+                    observation_new_gt = np.empty(self.dims['ground_truth_obs_size'], np.float32)
+                    achieved_goal_new_gt = np.empty(self.dims['ground_truth_goal'], np.float32)
                     # step env
                     action= self._sample_action(observation, achieved_goal, desired_goal) # action is squashed to [-1, 1] by tanh function
                     obs_dict_new, reward, done, _ = env.step(ACTION_SCALE*action)
                     observation_new[:] = obs_dict_new['observation']
                     achieved_goal_new[:] = obs_dict_new['achieved_goal']
+                    if not self.ground_truth:
+                        observation_new_gt[:] = obs_dict_new['observation_gt']
+                        achieved_goal_new_gt[:] = obs_dict_new['achieved_goal_gt']
                     success = np.array(obs_dict_new['is_success'])
 
                     # store transitions
@@ -221,13 +243,23 @@ class HER:
                     d_goals.append(desired_goal.copy())
                     successes.append(success.copy())
                     rewards.append(reward)
+                    if not self.ground_truth:
+                        obs_gt.append(observation_gt.copy())
+                        a_goals_gt.append(achieved_goal_gt.copy())
+                        d_goals_gt.append(desired_goal_gt.copy())
 
                     # update states
                     observation[:] = observation_new.copy()
                     achieved_goal[:] = achieved_goal_new.copy()
+                    if not self.ground_truth:
+                        observation_gt[:] = observation_new_gt.copy()
+                        achieved_goal_gt[:] = achieved_goal_new_gt.copy()
 
             obs.append(observation.copy())
             a_goals.append(achieved_goal.copy())
+            if not self.ground_truth:
+                obs_gt.append(observation_gt.copy())
+                a_goals_gt.append(achieved_goal_gt.copy())
 
             episode_transition = dict(
                 o = np.array(obs).copy(),
@@ -235,6 +267,10 @@ class HER:
                 g = np.array(d_goals).copy(),
                 ag = np.array(a_goals).copy(),
                 r = np.array(rewards).copy())
+            if not self.ground_truth:
+                episode_transition['o_gt'] = np.array(obs_gt).copy()
+                episode_transition['ag_gt'] = np.array(a_goals_gt).copy()
+                episode_transition['g_gt'] = np.array(d_goals_gt).copy()
             # stats
             episode += 1
             self.num_collected_episodes += 1
