@@ -8,12 +8,13 @@ from torchvision import transforms
 from IPython import embed
 
 IMAGE_PATH = "/homeL/cong/HitLyn/Visual-Pushing/images/only_objects_masks"
-SCALE_RANGE = 10
+SCALE_RANGE = 6
+CHOSEN_FEATURES = 10
 
 device = torch.device('cuda:1')
 # global model
-model = VAE(device = device, image_channels = 1, h_dim = 1024, z_dim = 6)
-model.load("/homeL/cong/HitLyn/Visual-Pushing/results/vae/04_24-13_28/vae_model", 140, map_location='cuda:1')
+model = VAE(device = device, image_channels = 1, h_dim = 1024, z_dim = 4)
+model.load("/homeL/cong/HitLyn/Visual-Pushing/results/vae/04_25-14_06/vae_model", 100, map_location='cuda:1')
 
 random_id = 1
 
@@ -26,11 +27,11 @@ frame.pack()
 
 l1 = tk.Label(master = frame, text = '')
 l1.config(font=("Courier", 14))
-l1.place(x = 60, y = 350)
+l1.place(x = 60, y = 330)
 
 l2 = tk.Label(master = frame, text = '')
 l2.config(font=("Courier", 14))
-l2.place(x = 880, y = 350)
+l2.place(x = 880, y = 330)
 
 l3 = tk.Label(master = frame, text = 'latent features')
 l3.config(font=("Courier", 14))
@@ -38,12 +39,12 @@ l3.place(x = 490, y = 10)
 
 encoder_image = Image.open("/homeL/cong/Downloads/encoder.png").resize([100, 150])
 encoder_image = ImageTk.PhotoImage(encoder_image)
-l4 = tk.Label(master = frame, text = 'latent features')
+l4 = tk.Label(master = frame)
 l4.config(image=encoder_image)
 l4.place(x = 350, y = 120)
 decoder_image = Image.open("/homeL/cong/Downloads/decoder.png").resize([100, 150])
 decoder_image = ImageTk.PhotoImage(decoder_image)
-l5 = tk.Label(master = frame, text = 'latent features')
+l5 = tk.Label(master = frame)
 l5.config(image = decoder_image)
 l5.place(x = 700, y = 120)
 
@@ -98,6 +99,34 @@ def set_s6_value(val):
     mu[5] = val
     show_out_put(mu)
 
+def set_s7_value(val):
+    # l1.configure(text = val)
+    # mu = latent_value.copy()
+    mu = latent_value
+    mu[6] = val
+    show_out_put(mu)
+
+def set_s8_value(val):
+    # l1.configure(text = val)
+    # mu = latent_value.copy()
+    mu = latent_value
+    mu[7] = val
+    show_out_put(mu)
+
+def set_s9_value(val):
+    # l1.configure(text = val)
+    # mu = latent_value.copy()
+    mu = latent_value
+    mu[8] = val
+    show_out_put(mu)
+
+def set_s10_value(val):
+    # l1.configure(text = val)
+    # mu = latent_value.copy()
+    mu = latent_value
+    mu[9] = val
+    show_out_put(mu)
+
 def show_out_put(mu):
     # print(mu)
     with torch.no_grad():
@@ -133,20 +162,34 @@ def show_image(id):
     show_out_put(latent_value)
 
     # reset values
-    # embed();exit()
     s1.set(latent_value[0])
     show_out_put(latent_value)
     s2.set(latent_value[1])
     show_out_put(latent_value)
-    s3.set(latent_value[2])
-    show_out_put(latent_value)
-    s4.set(latent_value[3])
-    show_out_put(latent_value)
-    s5.set(latent_value[4])
-    show_out_put(latent_value)
-    s6.set(latent_value[5])
-    show_out_put(latent_value)
-    # print(latent_value)
+    if len(latent_value) > 2:
+        s3.set(latent_value[2])
+        show_out_put(latent_value)
+    if len(latent_value) >3:
+        s4.set(latent_value[3])
+        show_out_put(latent_value)
+    if len(latent_value) > 4:
+        s5.set(latent_value[4])
+        show_out_put(latent_value)
+    if len(latent_value) > 5:
+        s6.set(latent_value[5])
+        show_out_put(latent_value)
+    if len(latent_value) > 6:
+        s7.set(latent_value[6])
+        show_out_put(latent_value)
+    if len(latent_value) > 7:
+        s8.set(latent_value[7])
+        show_out_put(latent_value)
+    if len(latent_value) > 8:
+        s9.set(latent_value[8])
+        show_out_put(latent_value)
+    if len(latent_value) > 9:
+        s10.set(latent_value[9])
+        show_out_put(latent_value)
 
 def select_image():
     # print('selecting new')
@@ -165,24 +208,32 @@ def last_image():
     show_image(random_id)
 
 # slider
-s1 = tk.Scale(window, from_ = -SCALE_RANGE, to= SCALE_RANGE, orient=tk.HORIZONTAL, length = 150, resolution = 0.01, command = set_s1_value)
-s1.place(x = 500, y = 50)
-s2 = tk.Scale(window, from_ = -SCALE_RANGE, to= SCALE_RANGE, orient=tk.HORIZONTAL, length = 150, resolution = 0.01, command = set_s2_value)
-s2.place(x = 500, y = 90)
-s3 = tk.Scale(window, from_ = -SCALE_RANGE, to= SCALE_RANGE, orient=tk.HORIZONTAL, length = 150, resolution = 0.01, command = set_s3_value)
-s3.place(x = 500, y = 130)
-s4 = tk.Scale(window, from_ = -SCALE_RANGE, to= SCALE_RANGE, orient=tk.HORIZONTAL, length = 150, resolution = 0.01, command = set_s4_value)
-s4.place(x = 500, y = 170)
-s5 = tk.Scale(window, from_ = -SCALE_RANGE, to= SCALE_RANGE, orient=tk.HORIZONTAL, length = 150, resolution = 0.01, command = set_s5_value)
-s5.place(x = 500, y = 210)
-s6 = tk.Scale(window, from_ = -SCALE_RANGE, to= SCALE_RANGE, orient=tk.HORIZONTAL, length = 150, resolution = 0.01, command = set_s6_value)
-s6.place(x = 500, y = 250)
+s1 = tk.Scale(window, from_ = -SCALE_RANGE, to= SCALE_RANGE, orient=tk.HORIZONTAL, length = 150, resolution = 0.01, command = set_s1_value, width = 8)
+s1.place(x = 500, y = 40)
+s2 = tk.Scale(window, from_ = -SCALE_RANGE, to= SCALE_RANGE, orient=tk.HORIZONTAL, length = 150, resolution = 0.01, command = set_s2_value, width = 8)
+s2.place(x = 500, y = 70)
+s3 = tk.Scale(window, from_ = -SCALE_RANGE, to= SCALE_RANGE, orient=tk.HORIZONTAL, length = 150, resolution = 0.01, command = set_s3_value, width = 8)
+s3.place(x = 500, y = 100)
+s4 = tk.Scale(window, from_ = -SCALE_RANGE, to= SCALE_RANGE, orient=tk.HORIZONTAL, length = 150, resolution = 0.01, command = set_s4_value, width = 8)
+s4.place(x = 500, y = 130)
+s5 = tk.Scale(window, from_ = -SCALE_RANGE, to= SCALE_RANGE, orient=tk.HORIZONTAL, length = 150, resolution = 0.01, command = set_s5_value, width = 8)
+s5.place(x = 500, y = 160)
+s6 = tk.Scale(window, from_ = -SCALE_RANGE, to= SCALE_RANGE, orient=tk.HORIZONTAL, length = 150, resolution = 0.01, command = set_s6_value, width = 8)
+s6.place(x = 500, y = 190)
+s7 = tk.Scale(window, from_ = -SCALE_RANGE, to= SCALE_RANGE, orient=tk.HORIZONTAL, length = 150, resolution = 0.01, command = set_s7_value, width = 8)
+s7.place(x = 500, y = 220)
+s8 = tk.Scale(window, from_ = -SCALE_RANGE, to= SCALE_RANGE, orient=tk.HORIZONTAL, length = 150, resolution = 0.01, command = set_s8_value, width = 8)
+s8.place(x = 500, y = 250)
+s9 = tk.Scale(window, from_ = -SCALE_RANGE, to= SCALE_RANGE, orient=tk.HORIZONTAL, length = 150, resolution = 0.01, command = set_s9_value, width = 8)
+s9.place(x = 500, y = 280)
+s10 = tk.Scale(window, from_ = -SCALE_RANGE, to= SCALE_RANGE, orient=tk.HORIZONTAL, length = 150, resolution = 0.01, command = set_s10_value, width = 8)
+s10.place(x = 500, y = 310)
 # button
-button = tk.Button(frame, text = "random image", command = select_image, font=("Courier", 14))
-button.place(x = 495, y = 350)
-button = tk.Button(frame, text = "next image", command = next_image, font=("Courier", 14))
-button.place(x = 505, y = 400)
-button = tk.Button(frame, text = "last image", command = last_image, font=("Courier", 14))
-button.place(x = 505, y = 300)
+button = tk.Button(frame, text = "random", command = select_image, font=("Courier", 14))
+button.place(x = 80, y = 370)
+button = tk.Button(frame, text = "next", command = next_image, font=("Courier", 14))
+button.place(x = 220, y = 370)
+button = tk.Button(frame, text = "last", command = last_image, font=("Courier", 14))
+button.place(x = 220, y = 410)
 
 window.mainloop()

@@ -18,10 +18,10 @@ GlfwContext(offscreen=True)  # Create a window to init GLFW
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--task_name", default="YCB-Pushing")
-parser.add_argument("--obs_size", default = 15, type = int)# obj_pos 6 + gripper pos 3 + goal_pos 6
+parser.add_argument("--obs_size", default = 11, type = int)# obj_pos_features n + gripper pos 3 + goal_features n
 parser.add_argument("--action_size", default = 2, type = int)
 parser.add_argument("--feature_dims", default = 128, type = int)
-parser.add_argument("--goal_size", default = 6, type = int)#goal_pos 3
+parser.add_argument("--goal_size", default = 4, type = int)#goal_features n
 parser.add_argument("--device", default="auto", type = str)
 parser.add_argument("--net_class", default="Flatten", type = str)
 parser.add_argument("--min_action", default = -1., type = float)
@@ -38,6 +38,7 @@ parser.add_argument("--total_episodes", default = 1e6, type = int)
 parser.add_argument("--eval_freq", default = 50, type = int)
 parser.add_argument("--num_eval_episode", default = 20, type = int)
 parser.add_argument("--relative_goal", action = "store_false")
+parser.add_argument("--dense_reward", action = "store_true")
 parser.add_argument("--mp", action = "store_true")
 parser.add_argument("--seed", default = None, type = int)
 args = parser.parse_args()
@@ -144,6 +145,7 @@ def main():
         relative_goal = args.relative_goal,
         goal_type = 'pos',
         batch_size = args.batch_size,
+        dense_reward=args.dense_reward
     )
     # train
     agent.learn(total_episodes, eval_freq, num_eval_episode, writer, model_path, multiprocess = args.mp)

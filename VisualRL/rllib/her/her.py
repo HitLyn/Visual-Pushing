@@ -46,6 +46,7 @@ class HER:
             goal_type = 'pos',
             ground_truth = False,
             test = False,
+            dense_reward = False,
             ):
 
         self.observation_space = observation_space # network size
@@ -71,6 +72,7 @@ class HER:
         self.relative_goal = relative_goal
         self.goal_type = goal_type
         self.ground_truth = ground_truth
+        self.dense_reward = dense_reward
         self.gradient_steps = gradient_steps
         self.train_freq = train_freq
         self.train_cycle = train_cycle
@@ -104,6 +106,7 @@ class HER:
                     relative_goal = self.relative_goal,
                     goal_type = self.goal_type,
                     ground_truth = self.ground_truth,
+                    dense_reward = self.dense_reward,
                     )
 
         self.feature_extractor = make_feature_extractor(

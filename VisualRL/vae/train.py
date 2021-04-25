@@ -19,7 +19,7 @@ RESULTS_SAVE_PATH = os.path.join(os.environ["VISUAL_PUSHING_HOME"], "results/vae
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--batch-size', type = int, default = 64)
-parser.add_argument('--epochs', type = int, default = 200)
+parser.add_argument('--epochs', type = int, default = 150)
 parser.add_argument('--seed', type = int, default = 1)
 parser.add_argument('--eval_freq', type = int, default = 5)
 parser.add_argument('--device', type = str, default = 'auto')
@@ -33,7 +33,7 @@ def loss_fn(recon_x, x, mu, logvar):
 
 
 def main():
-    torch.manual_seed(args.seed)
+    # torch.manual_seed(args.seed)
 
     device = get_device(args.device)
 
@@ -46,7 +46,7 @@ def main():
     test_loader = torch.utils.data.DataLoader(test_dataset, batch_size = args.batch_size, shuffle = True, pin_memory = False, num_workers = 2)
     print('\nall data loader! \n')
     # load model
-    model = VAE(device = device, image_channels = 1, h_dim = 1024, z_dim = 6)
+    model = VAE(device = device, image_channels = 1, h_dim = 1024, z_dim = 4)
     optimizer = optim.Adam(model.parameters())
     criterion = nn.MSELoss()
 

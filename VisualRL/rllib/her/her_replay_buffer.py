@@ -14,10 +14,11 @@ class HerReplayBuffer:
             device,
             pos_threshold = 0.05,
             rot_threshold = 0.2,
-            latent_threshold = 1.,
+            latent_threshold = 1.25,
             relative_goal = True,
             goal_type = 'pos',
             ground_truth = False,
+            dense_reward = False,
             ):
         self.size_in_transitions = size_in_transitions
         self.size = int(self.size_in_transitions//episode_steps)
@@ -46,6 +47,7 @@ class HerReplayBuffer:
         # goal reward
         self.goal_type = goal_type
         self.ground_truth = ground_truth
+        self.dense_reward = dense_reward
 
     def full(self):
         return self.current_size == self.size
@@ -141,16 +143,20 @@ class HerReplayBuffer:
         if self.ground_truth:
             relative_goal['obj_pos'] = parameters['a_goals_'][:, :3] - parameters['d_goals'][:, :3]
             pos_distances = np.linalg.norm(relative_goal["obj_pos"], axis=-1)
-            success = np.array((pos_distances < self.pos_threshold))
+            reward = np.array((pos_distances < self.pos_threshold))
         else:
             relative_goal['obj_latent'] = parameters['a_goals_'] - parameters['d_goals']
             latent_distances = np.linalg.norm(relative_goal["obj_latent"], axis=-1)
-            success = np.array((latent_distances < self.latent_threshold))
+            if self.dense_reward:
+                reward = -latent_distances
+                # print('reward:', reward)
+            else:
+                reward = np.array((latent_distances < self.latent_threshold))
         # relative_goal['obj_rot'] = parameters['a_goals_'][:, 3:] - parameters['d_goals'][:, 3:]
         # embed();exit()
         # rot_distances = rotation.quat_magnitude(
         #     rotation.quat_normalize(rotation.euler2quat(relative_goal["obj_rot"]))
         # )
         # success = np.array((pos_distances < self.pos_threshold)) if self.goal_type == 'pos' else np.array((pos_distances < self.pos_threshold) * (rot_distances < self.rot_threshold))
-        success = success.astype(float) - 1.
-        return success
+        reward = reward.astype(float) - 1.
+        return reward
