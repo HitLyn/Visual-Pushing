@@ -112,6 +112,7 @@ class HerReplayBuffer:
         future_p = 1 - (1./(1 + self.replay_k))
         T = buffer_["actions"].shape[1]
         episode_nums = buffer_["actions"].shape[0]
+        # embed();exit()
         if sample_choice:
             episode_lengths = np.ones(batch_size).astype(int) * T
             episode_idxs = np.random.randint(0, episode_nums, batch_size)
@@ -125,7 +126,9 @@ class HerReplayBuffer:
             transition_indexes = np.random.randint(t_samples[her_indexes] + 1, T)
             future_ag = buffer_["a_goals"][her_episode_indexes, transition_indexes].copy()
             transitions["d_goals"][her_indexes] = future_ag
-
+            if not self.ground_truth:
+                future_ag_gt = buffer_["a_goals_gt"][her_episode_indexes, transition_indexes].copy()
+                transitions["d_goals_gt"][her_indexes] = future_ag_gt
         else:
             episode_idxs = np.random.randint(0, episode_nums, batch_size)
             t_samples = np.random.randint(0, T, batch_size)
