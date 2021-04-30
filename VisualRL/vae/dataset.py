@@ -10,7 +10,7 @@ def image_loader(path):
     return Image.open(path)
 
 class VaeImageDataset(Dataset):
-    def __init__(self, base_path, n_samples = 1e4, train = True, split = False, transform = None, loader = image_loader):
+    def __init__(self, base_path, n_samples = 3e4, train = True, split = False, transform = None, loader = image_loader):
         """
             base_path: path/to/generated_images, which can get the full path: path/to/generated_images
             n_samples: how many samples are there in the training set

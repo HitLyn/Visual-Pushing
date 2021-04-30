@@ -91,7 +91,7 @@ def main():
     # test
     episode = 0
     success_stats = []
-    while episode < 1000:
+    while episode < 4000:
         obs_dict = env.reset()
         start_time = time.time()
         observation = np.empty(agent.dims['buffer_obs_size'], np.float32)
@@ -105,9 +105,9 @@ def main():
 
         obs, a_goals, acts, d_goals, successes, dones = [], [], [], [], [], []
         with torch.no_grad():
-            for t in range(20):
+            for t in range(10):
                 # embed();exit()
-                name = '/homeL/cong/HitLyn/Visual-Pushing/images/red_simple_objects/' + "{:0>5d}.png".format(20 * episode + t)
+                name = '/homeL/cong/HitLyn/Visual-Pushing/images/all_objects/' + "{:0>5d}.png".format(10 * episode + t)
 
                 observation_new = np.empty(agent.dims['buffer_obs_size'], np.float32)
                 achieved_goal_new = np.empty(agent.dims['goal'], np.float32)

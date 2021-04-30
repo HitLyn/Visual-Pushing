@@ -4,7 +4,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 import torchvision
 import torchvision.transforms as transforms
-
+from torch.utils.tensorboard import SummaryWriter
 import numpy as np
 import argparse
 import os
@@ -14,12 +14,12 @@ from VisualRL.vae.model import VAE
 from VisualRL.vae.dataset import VaeImageDataset
 
 
-DATA_SET_PATH = os.path.join(os.environ["VISUAL_PUSHING_HOME"], "images/only_objects_masks")
+DATA_SET_PATH = os.path.join(os.environ["VISUAL_PUSHING_HOME"], "images/all_objects_masks")
 RESULTS_SAVE_PATH = os.path.join(os.environ["VISUAL_PUSHING_HOME"], "results/vae")
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--batch-size', type = int, default = 64)
-parser.add_argument('--epochs', type = int, default = 150)
+parser.add_argument('--epochs', type = int, default = 120)
 parser.add_argument('--seed', type = int, default = 1)
 parser.add_argument('--eval_freq', type = int, default = 5)
 parser.add_argument('--device', type = str, default = 'auto')
@@ -47,11 +47,13 @@ def main():
     print('\nall data loader! \n')
     # load model
     model = VAE(device = device, image_channels = 1, h_dim = 1024, z_dim = 4)
-    optimizer = optim.Adam(model.parameters())
+    optimizer = optim.Adam(model.parameters(), lr = 0.0003)
     criterion = nn.MSELoss()
+
 
     # train
     images_path, model_path = create_path_for_results(RESULTS_SAVE_PATH, image = True, model = True)
+    writer = SummaryWriter(model_path)
     for epoch in range(args.epochs):
         train_loss = 0
         for batch_id, image in enumerate(train_loader):
@@ -62,6 +64,9 @@ def main():
             loss.backward()
             optimizer.step()
             print("Epoch[{}/{}] Loss: {:.3f} {:.3f} {:.3f}".format(epoch + 1, args.epochs, loss.item()/args.batch_size, bce.item()/args.batch_size, kld.item()/args.batch_size))
+            writer.add_scalar('train/Total Loss', loss.item()/args.batch_size, epoch)
+            writer.add_scalar('train/BCE', bce.item()/args.batch_size, epoch)
+            writer.add_scalar('train/KLD', kld.item()/args.batch_size, epoch)
         # test
         with torch.no_grad():
             for batch_id, test_image, in enumerate(test_loader):
@@ -70,7 +75,9 @@ def main():
                 loss, bce, kld = loss_fn(test_recon, test_image, mu, logvar)
 
             print("TEST Epoch[{}/{}] Loss: {:.3f} {:.3f} {:.3f}".format(epoch + 1, args.epochs, loss.item()/args.batch_size, bce.item()/args.batch_size, kld.item()/args.batch_size))
-
+            writer.add_scalar('eval/Total Loss', loss.item()/args.batch_size, epoch)
+            writer.add_scalar('eval/BCE', bce.item()/args.batch_size, epoch)
+            writer.add_scalar('eval/KLD', kld.item()/args.batch_size, epoch)
         # save the testing results
         image_sample = image[0]
         image_recon_sample = image_recon[0]

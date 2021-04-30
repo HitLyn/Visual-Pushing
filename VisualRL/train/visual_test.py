@@ -17,8 +17,9 @@ import gym
 
 from mujoco_py import GlfwContext
 # GlfwContext(offscreen=True)  # Create a window to init GLFW
-
-
+# weights can be used:
+# /homeL/cong/HitLyn/Visual-Pushing/log_files/her/04_26-14_39/her_models, step 46700, vae:/homeL/cong/HitLyn/Visual-Pushing/results/vae/4/vae_model step = 100, latent_space:4, only 1 object
+# /homeL/cong/HitLyn/Visual-Pushing/log_files/her/04_28-16_10/her_models, step 46300, vae:/homeL/cong/HitLyn/Visual-Pushing/results/vae/4/vae_model step = 80, latent_space = 4, 4 objects
 parser = argparse.ArgumentParser()
 parser.add_argument("--task_name", default="YCB-Pushing")
 parser.add_argument("--obs_size", default = 11, type = int)
@@ -34,7 +35,7 @@ parser.add_argument("--train_freq", default = 1, type = int)
 parser.add_argument("--learning_starts", default = 2, type = int)
 parser.add_argument("--learning_rate", default = 0.0003, type = float)
 parser.add_argument("--save_interval", default = 100, type = int)
-parser.add_argument("--step", default = 46700, type = int)
+parser.add_argument("--step", default = 46800, type = int)
 parser.add_argument("--train_cycle", default = 1, type = int)
 parser.add_argument("--gradient_steps", default = 50, type = int)
 parser.add_argument("--batch_size", default = 256, type = int)
@@ -49,7 +50,7 @@ parser.add_argument("--load_weights", default=0, type=int)
 args = parser.parse_args()
 args.load_weights = 1
 
-WEIGHT_PATH = "/homeL/cong/HitLyn/Visual-Pushing/log_files/her/04_26-14_39/her_models"
+WEIGHT_PATH = "/homeL/cong/HitLyn/Visual-Pushing/log_files/her/04_28-16_10/her_models"
 ACTION_SCALE = 0.7
 def main():
     observation_space = args.obs_size
@@ -98,10 +99,10 @@ def main():
     # test
     episode = 0
     success_stats = []
-    video_bottom = cv2.VideoWriter('/homeL/cong/Videos/push/saved/bottom.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 10, (720, 720), True)
-    video_front = cv2.VideoWriter('/homeL/cong/Videos/push/saved/front.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 10, (720, 720), True)
+    video_bottom = cv2.VideoWriter('/homeL/cong/Videos/push/saved/4_objects/bottom_46800.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 10, (720, 720), True)
+    video_front = cv2.VideoWriter('/homeL/cong/Videos/push/saved/4_objects/front_46800.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 10, (720, 720), True)
 
-    while episode < 50:
+    while episode < 20:
         obs_dict = env.reset()
         start_time = time.time()
         observation = np.empty(agent.dims['buffer_obs_size'], np.float32)
@@ -116,7 +117,7 @@ def main():
 
         obs, a_goals, acts, d_goals, successes, dones = [], [], [], [], [], []
         with torch.no_grad():
-            for t in range(20):
+            for t in range(30):
                 observation_new = np.empty(agent.dims['buffer_obs_size'], np.float32)
                 achieved_goal_new = np.empty(agent.dims['goal'], np.float32)
                 # step env

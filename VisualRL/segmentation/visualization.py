@@ -7,14 +7,14 @@ import torch
 from torchvision import transforms
 from IPython import embed
 
-IMAGE_PATH = "/homeL/cong/HitLyn/Visual-Pushing/images/only_objects_masks"
+IMAGE_PATH = "/homeL/cong/HitLyn/Visual-Pushing/images/all_objects_masks"
 SCALE_RANGE = 6
 CHOSEN_FEATURES = 10
 
 device = torch.device('cuda:1')
 # global model
-model = VAE(device = device, image_channels = 1, h_dim = 1024, z_dim = 6)
-model.load("/homeL/cong/HitLyn/Visual-Pushing/results/vae/6/vae_model", 20, map_location='cuda:1')
+model = VAE(device = device, image_channels = 1, h_dim = 1024, z_dim = 4)
+model.load("/homeL/cong/HitLyn/Visual-Pushing/results/vae/04_30-13_51/vae_model", 80, map_location='cuda:1')
 
 random_id = 1
 
@@ -191,10 +191,21 @@ def show_image(id):
         s10.set(latent_value[9])
         show_out_put(latent_value)
 
-def select_image():
+def select_image_from_train():
     # print('selecting new')
     global random_id
-    random_id = np.random.randint(18000, 19000)
+    # random_id = np.random.randint(18000, 19000)
+    random_id = np.random.randint(0, 23000)
+    # random_id = 1
+    # num = 1
+    show_image(random_id)
+
+def select_image_from_test():
+    # print('selecting new')
+    global random_id
+    random_id = np.random.randint(25000, 29000)
+    # random_id = np.random.randint(0, 18000)
+    # random_id = 18005
     show_image(random_id)
 
 def next_image():
@@ -229,8 +240,10 @@ s9.place(x = 500, y = 280)
 s10 = tk.Scale(window, from_ = -SCALE_RANGE, to= SCALE_RANGE, orient=tk.HORIZONTAL, length = 150, resolution = 0.01, command = set_s10_value, width = 8)
 s10.place(x = 500, y = 310)
 # button
-button = tk.Button(frame, text = "random", command = select_image, font=("Courier", 14))
+button = tk.Button(frame, text = "train set", command = select_image_from_train, font=("Courier", 14))
 button.place(x = 80, y = 370)
+button = tk.Button(frame, text = "test set", command = select_image_from_test, font=("Courier", 14))
+button.place(x = 80, y = 410)
 button = tk.Button(frame, text = "next", command = next_image, font=("Courier", 14))
 button.place(x = 220, y = 370)
 button = tk.Button(frame, text = "last", command = last_image, font=("Courier", 14))

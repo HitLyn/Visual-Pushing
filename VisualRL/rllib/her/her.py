@@ -14,7 +14,7 @@ from VisualRL.rllib.her.her_replay_buffer import HerReplayBuffer
 from VisualRL.rllib.her.her_replay_buffer_test import HerReplayBufferTest
 from VisualRL.rllib.common.utils import polyak_update
 
-from robogym.envs.push.push_a3 import make_env
+# from robogym.envs.push.push_a3 import make_env
 
 ACTION_SCALE = 0.7
 class HER:
@@ -284,59 +284,59 @@ class HER:
         #TODO write success_rate to logger here
         # writer.add_scalar("train/success_rate", success_rate, self._n_updates)
         writer.add_scalar("train/mean_reward", mean_reward, self._n_updates)
-
-    def mp_collect_rollouts(self, i, seed_list, mp_list, policy, writer):
-        env = make_env()
-        set_seed_everywhere(seed_list[i])
-        # stats
-        success_stats = []
-        # rollout for all workers
-        obs_dict = env.reset()
-        observation = np.empty(self.dims['buffer_obs_size'], np.float32)
-        achieved_goal = np.empty(self.dims['goal'], np.float32)
-        desired_goal = np.empty(self.dims['goal'], np.float32)
-        observation[:] = obs_dict['observation']
-        achieved_goal[:] = obs_dict['achieved_goal']
-        desired_goal[:] = obs_dict['desired_goal']
-
-        obs, a_goals, acts, d_goals, successes, dones = [], [], [], [], [], []
-        with torch.no_grad():
-            for t in range(self.max_episode_steps):
-                observation_new = np.empty(self.dims['buffer_obs_size'], np.float32)
-                achieved_goal_new = np.empty(self.dims['goal'], np.float32)
-                # success = np.zeros(1)
-
-                # step env
-                action= self._sample_action(observation, achieved_goal, desired_goal, cpu = True) # action is squashed to [-1, 1] by tanh function
-                obs_dict_new, reward, done, _ = env.step(ACTION_SCALE*action)
-                observation_new[:] = obs_dict_new['observation']
-                achieved_goal_new[:] = obs_dict_new['achieved_goal']
-                success = np.array(obs_dict_new['is_success'])
-
-                # store transitions
-                dones.append(done)
-                obs.append(observation.copy())
-                a_goals.append(achieved_goal.copy())
-                acts.append(action.copy())
-                d_goals.append(desired_goal.copy())
-                successes.append(success.copy())
-
-                # update states
-                observation[:] = observation_new.copy()
-                achieved_goal[:] = achieved_goal_new.copy()
-
-        obs.append(observation.copy())
-        a_goals.append(achieved_goal.copy())
-
-        episode_transition = dict(
-            o = np.array(obs).copy(),
-            u = np.array(acts).copy(),
-            g = np.array(d_goals).copy(),
-            ag = np.array(a_goals).copy())
-
-        # add transition to mp_list
-        mp_list.append(episode_transition)
-
+    #
+    # def mp_collect_rollouts(self, i, seed_list, mp_list, policy, writer):
+    #     env = make_env()
+    #     set_seed_everywhere(seed_list[i])
+    #     # stats
+    #     success_stats = []
+    #     # rollout for all workers
+    #     obs_dict = env.reset()
+    #     observation = np.empty(self.dims['buffer_obs_size'], np.float32)
+    #     achieved_goal = np.empty(self.dims['goal'], np.float32)
+    #     desired_goal = np.empty(self.dims['goal'], np.float32)
+    #     observation[:] = obs_dict['observation']
+    #     achieved_goal[:] = obs_dict['achieved_goal']
+    #     desired_goal[:] = obs_dict['desired_goal']
+    #
+    #     obs, a_goals, acts, d_goals, successes, dones = [], [], [], [], [], []
+    #     with torch.no_grad():
+    #         for t in range(self.max_episode_steps):
+    #             observation_new = np.empty(self.dims['buffer_obs_size'], np.float32)
+    #             achieved_goal_new = np.empty(self.dims['goal'], np.float32)
+    #             # success = np.zeros(1)
+    #
+    #             # step env
+    #             action= self._sample_action(observation, achieved_goal, desired_goal, cpu = True) # action is squashed to [-1, 1] by tanh function
+    #             obs_dict_new, reward, done, _ = env.step(ACTION_SCALE*action)
+    #             observation_new[:] = obs_dict_new['observation']
+    #             achieved_goal_new[:] = obs_dict_new['achieved_goal']
+    #             success = np.array(obs_dict_new['is_success'])
+    #
+    #             # store transitions
+    #             dones.append(done)
+    #             obs.append(observation.copy())
+    #             a_goals.append(achieved_goal.copy())
+    #             acts.append(action.copy())
+    #             d_goals.append(desired_goal.copy())
+    #             successes.append(success.copy())
+    #
+    #             # update states
+    #             observation[:] = observation_new.copy()
+    #             achieved_goal[:] = achieved_goal_new.copy()
+    #
+    #     obs.append(observation.copy())
+    #     a_goals.append(achieved_goal.copy())
+    #
+    #     episode_transition = dict(
+    #         o = np.array(obs).copy(),
+    #         u = np.array(acts).copy(),
+    #         g = np.array(d_goals).copy(),
+    #         ag = np.array(a_goals).copy())
+    #
+    #     # add transition to mp_list
+    #     mp_list.append(episode_transition)
+    #
 
     def to(self, device):
         self.device = device
