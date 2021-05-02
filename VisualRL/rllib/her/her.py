@@ -16,7 +16,7 @@ from VisualRL.rllib.common.utils import polyak_update
 
 # from robogym.envs.push.push_a3 import make_env
 
-ACTION_SCALE = 0.7
+ACTION_SCALE = 0.5
 class HER:
     def __init__(
             self,
