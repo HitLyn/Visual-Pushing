@@ -13,6 +13,7 @@ from VisualRL.rllib.her.her import HER
 from VisualRL.rllib.common.utils import get_device, set_seed_everywhere
 
 from robogym.envs.push.visual_pushing import make_env
+# from robogym.envs.push.push_env import make_env
 import gym
 
 from mujoco_py import GlfwContext
@@ -20,6 +21,7 @@ from mujoco_py import GlfwContext
 # weights can be used:
 # /homeL/cong/HitLyn/Visual-Pushing/log_files/her/04_26-14_39/her_models, step 46700, vae:/homeL/cong/HitLyn/Visual-Pushing/results/vae/4/vae_model step = 100, latent_space:4, only 1 object
 # /homeL/cong/HitLyn/Visual-Pushing/log_files/her/04_28-16_10/her_models, step 46300, vae:/homeL/cong/HitLyn/Visual-Pushing/results/vae/4/vae_model step = 80, latent_space = 4, 4 objects
+# /homeL/cong/HitLyn/Visual-Pushing/log_files/her/04_30-14_25/her_models, step 51000, vae:/homeL/cong/HitLyn/Visual-Pushing/results/vae/04_30-13_51/vae_model, step = 100, latent_space = 4, all objects
 parser = argparse.ArgumentParser()
 parser.add_argument("--task_name", default="YCB-Pushing")
 parser.add_argument("--obs_size", default = 11, type = int)
@@ -35,7 +37,7 @@ parser.add_argument("--train_freq", default = 1, type = int)
 parser.add_argument("--learning_starts", default = 2, type = int)
 parser.add_argument("--learning_rate", default = 0.0003, type = float)
 parser.add_argument("--save_interval", default = 100, type = int)
-parser.add_argument("--step", default = 46800, type = int)
+parser.add_argument("--step", default = 51000, type = int)
 parser.add_argument("--train_cycle", default = 1, type = int)
 parser.add_argument("--gradient_steps", default = 50, type = int)
 parser.add_argument("--batch_size", default = 256, type = int)
@@ -50,8 +52,8 @@ parser.add_argument("--load_weights", default=0, type=int)
 args = parser.parse_args()
 args.load_weights = 1
 
-WEIGHT_PATH = "/homeL/cong/HitLyn/Visual-Pushing/log_files/her/04_28-16_10/her_models"
-ACTION_SCALE = 0.7
+WEIGHT_PATH = "/homeL/cong/HitLyn/Visual-Pushing/log_files/her/04_30-14_25/her_models"
+ACTION_SCALE = 0.5
 def main():
     observation_space = args.obs_size
     action_space = args.action_size
@@ -99,10 +101,10 @@ def main():
     # test
     episode = 0
     success_stats = []
-    video_bottom = cv2.VideoWriter('/homeL/cong/Videos/push/saved/4_objects/bottom_46800.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 10, (720, 720), True)
-    video_front = cv2.VideoWriter('/homeL/cong/Videos/push/saved/4_objects/front_46800.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 10, (720, 720), True)
+    video_bottom = cv2.VideoWriter('/homeL/cong/Videos/push/saved/all_objects/bottom_step51000_1.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 10, (720, 720), True)
+    video_front = cv2.VideoWriter('/homeL/cong/Videos/push/saved/all_objects/front_step51000_1.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 10, (720, 720), True)
 
-    while episode < 20:
+    while episode < 100:
         obs_dict = env.reset()
         start_time = time.time()
         observation = np.empty(agent.dims['buffer_obs_size'], np.float32)
