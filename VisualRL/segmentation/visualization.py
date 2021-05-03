@@ -1,4 +1,5 @@
 import tkinter as tk
+import cv2
 from PIL import Image, ImageTk
 import os
 import numpy as np
@@ -6,8 +7,10 @@ from VisualRL.vae.model import VAE
 import torch
 from torchvision import transforms
 from IPython import embed
+import matplotlib.pyplot as plt
 
 IMAGE_PATH = "/homeL/cong/HitLyn/Visual-Pushing/images/all_objects_masks"
+SAVE_PATH = "/homeL/cong/HitLyn/Visual-Pushing/images/save_from_visualization"
 SCALE_RANGE = 6
 CHOSEN_FEATURES = 10
 
@@ -218,6 +221,23 @@ def last_image():
     random_id -= 1
     show_image(random_id)
 
+def save_image():
+    global latent_value
+    global random_id
+    input_file_name = os.path.join(IMAGE_PATH, "{:0>5d}.png".format(random_id))
+    input_image = Image.open(input_file_name)
+    save_file_name = os.path.join(SAVE_PATH, "{:0>5d}_input.png".format(random_id))
+    # plt.imsave(save_file_name, input_image, format = 'png')
+    cv2.imwrite(save_file_name, np.array(input_image))
+
+    with torch.no_grad():
+        image_recon_tensor = model.decode(torch.tensor(latent_value).to(dtype = torch.float32).to(device).unsqueeze(0))
+    image_recon_pil = transforms.ToPILImage()(image_recon_tensor.squeeze().cpu())
+    output_file_name = os.path.join(SAVE_PATH, "{:0>5d}_output.png".format(random_id))
+    # plt.imsave(output_file_name, image_recon_pil, format = 'png')
+    cv2.imwrite(output_file_name, np.array(image_recon_pil))
+
+
 # slider
 s1 = tk.Scale(window, from_ = -SCALE_RANGE, to= SCALE_RANGE, orient=tk.HORIZONTAL, length = 150, resolution = 0.01, command = set_s1_value, width = 8)
 s1.place(x = 500, y = 40)
@@ -248,5 +268,6 @@ button = tk.Button(frame, text = "next", command = next_image, font=("Courier", 
 button.place(x = 220, y = 370)
 button = tk.Button(frame, text = "last", command = last_image, font=("Courier", 14))
 button.place(x = 220, y = 410)
-
+button = tk.Button(frame, text = "save image", command = save_image, font=("Courier", 14))
+button.place(x = 500, y = 390)
 window.mainloop()
