@@ -86,10 +86,12 @@ class VisualPushing:
         return goal_latent
 
     def get_visual_latent(self, image):
-        # TODO crop to 720, 720
-
+        # TODO crop to square
+        # image = image[y:y+h, x:x+w]
         image = cv2.resize(image, (64, 64))
         image = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
+        # cv2.imshow(image)
+        # cv2.waitKey(0)
 
         light_red = (0, 150, 0)
         dark_red = (20, 255, 255)
