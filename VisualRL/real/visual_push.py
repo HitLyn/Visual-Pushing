@@ -130,7 +130,8 @@ class VisualPushing:
             except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
                 print("waiting for transform ....")
                 continue
-            pose_tool = np.asarray(trans_tool)[:2]
+            pose_tool = np.asarray(trans_tool)[:3]
+            pose_toll[2] = 1.256
 
         return pose_tool
 
