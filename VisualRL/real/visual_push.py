@@ -6,16 +6,20 @@ import numpy as np
 import os
 import cv2
 
+import matplotlib.pyplot as plt
 import rospy
-import tf
+from std_msgs.msg import Float64MultiArray
 import geometry_msgs.msg
 from visualization_msgs.msg import Marker, MarkerArray
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
-
+import argparse
+import ros_numpy
 from VisualRL.rllib.her.her import HER
 from VisualRL.vae.model import VAE
 from VisualRL.rllib.common.utils import get_device
+
+from IPython import embed
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--task_name", default="YCB-Pushing")
@@ -45,26 +49,40 @@ parser.add_argument("--seed", default = None, type = int)
 parser.add_argument("--load_weights", default=1, type=int)
 args = parser.parse_args()
 
-WEIGHT_PATH = "/homeL/cong/HitLyn/Visual-Pushing/log_files/her/04_30-14_25/her_models"
+WEIGHT_PATH = "/homeL/cong_pushing/HitLyn/Visual-Pushing/log_files/her/04_30-14_25/her_models"
 ACTION_SCALE = 0.5
-STEP = 51000
+VELOCITY_SCALE = 0.2
+# STEP = 51000
 
+IMAGE_PATH = '/homeL/pushing/pushing_masks'
 
 
 class VisualPushing:
     def __init__(self, device = None):
+        self.step_ = 0
+        self.goal_latent = None
         self.vel_pub = rospy.Publisher('/dynamic_pushing/velocity', geometry_msgs.msg.Vector3, queue_size=1)
-        self.bridge = CvBridge()
+        self.goal_publisher = rospy.Publisher('/pushing/goal_recon', Image, queue_size = 2)
+        self.mask_publisher = rospy.Publisher('/pushing/mask', Image, queue_size=2)
+        self.image_recon_publisher = rospy.Publisher('/pushing/mask_recon', Image, queue_size=2)
+        self.image_crop_publisher = rospy.Publisher('/pushing/image_crop', Image, queue_size=2)
+        self.image_crop_segmentation_publisher = rospy.Publisher('/pushing/image_crop_hsv', Image, queue_size=2)
+        # update pusher tf
+        self.gripper_pos = np.zeros(3)
+        rospy.Subscriber("/tf_pusher", Float64MultiArray, self.pusher_tf_update)
+
+        # self.bridge = CvBridge()
         self.device = torch.device('cuda:0') if device == None else torch.device('cuda:1')
         # tf
-        self.tf_listener = tf.TransformListener()
         # motion range
         self.x_range = np.array([0.43, 0.90])
         self.y_range = np.array([0.35, 1.10])
         # goal pose initialization
         self.vae = VAE(device = self.device, image_channels = 1, h_dim = 1024, z_dim = 4)
-        self.vae.load("/homeL/cong/HitLyn/Visual-Pushing/results/vae/04_30-13_51/vae_model", 100, map_location=self.device)  # latent space = 4
+        self.vae.load("/homeL/cong_pushing/HitLyn/Visual-Pushing/results/vae/04_30-13_51/vae_model", 100, map_location=self.device)  # latent space = 4
         self.goal_latent = self.initialize_goal()
+        # self.goal_latent = np.array([ 1.4946128,  0.6009053,  5.4465885, -1.370616 ])
+
 
 
     def clip_action(self, gripper_pos, action):
@@ -75,87 +93,100 @@ class VisualPushing:
             action[1] = 0
         return action
 
-    def initialize_goal(self):
-        raw_image = rospy.wait_for_message("/some/channel/to/image", Image)
-        try:
-            goal_image = self.bridge.imgmsg_to_cv2(raw_image, "passthrough")
-        except:
-            print("Error from ROS Image to CV2")
+    def pusher_tf_update(self, pos):
+        offset = np.array([-0.0, 0, 0])
+        self.gripper_pos = np.array(pos.data) + offset
 
+    def initialize_goal(self):
+        raw_image = None
+        while not raw_image:
+            raw_image = rospy.wait_for_message("/camera/color/image_raw", Image)
+            print('waiting for goal image')
+        goal_image = ros_numpy.numpify(raw_image)
         goal_latent = self.get_visual_latent(goal_image)
         return goal_latent
 
     def get_visual_latent(self, image):
         # TODO crop to square
-        # image = image[y:y+h, x:x+w]
-        image = cv2.resize(image, (64, 64))
-        image = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
-        # cv2.imshow(image)
-        # cv2.waitKey(0)
+        crop = image[0:470, 110:580, :]
+        image_crop = crop.copy()
+        # embed();
+        # exit()
+        image_crop = cv2.resize(image_crop, (64, 64))
+        image_crop_hsv = cv2.cvtColor(image_crop, cv2.COLOR_RGB2HSV)
 
         light_red = (0, 150, 0)
         dark_red = (20, 255, 255)
-        mask = cv2.inRange(image, light_red, dark_red)
+        mask = cv2.inRange(image_crop_hsv, light_red, dark_red)
+        # cv2.imwrite(os.path.join(IMAGE_PATH, "step{}.png".format(self.step_)), mask)
+        # cv2.imshow(image)
+        # cv2.waitKey(0)
+        # embed();exit()
+
         tensor = transforms.ToTensor()(mask).unsqueeze(0).to(self.device)
         with torch.no_grad():
-            recon, z, mu, _ = self.vae(goal_tensor)
+            recon, z, mu, _ = self.vae(tensor)
         latent = mu[0].cpu().numpy()
+        # print('current: ',latent)
+        # print('goal: ', self.goal_latent)
+        image_recon_pil = transforms.ToPILImage()(recon.squeeze().cpu())
+        # embed();exit()
+
+        self.mask_publisher.publish(ros_numpy.msgify(Image,np.array(cv2.rotate(mask, cv2.cv2.ROTATE_90_CLOCKWISE)),'mono8'))
+        self.image_recon_publisher.publish(ros_numpy.msgify(Image,np.array(cv2.rotate(np.array(image_recon_pil), cv2.cv2.ROTATE_90_CLOCKWISE)),'mono8'))
+        self.image_crop_publisher.publish(ros_numpy.msgify(Image,np.array(cv2.rotate(crop, cv2.cv2.ROTATE_90_CLOCKWISE)),'rgb8'))
+        self.image_crop_segmentation_publisher.publish(ros_numpy.msgify(Image,np.array(cv2.rotate(image_crop_hsv,cv2.cv2.ROTATE_90_CLOCKWISE)),'rgb8'))
+        # if self.step_ % 10 == 0:
+        #     cv2.imwrite(os.path.join(IMAGE_PATH, "step{}.png".format(self.step_)), mask)
+        #     cv2.imwrite(os.path.join(IMAGE_PATH, "step{}_rec.png".format(self.step_)), np.array(image_recon_pil))
+
+            # cv2.imwrite(os.path.join(IMAGE_PATH, "goal{}_rec.png".format(self.step_)), np.array(goal_recon_pil))
+        # embed();exit()
+        if self.step_ > 1:
+            with torch.no_grad():
+                goal_recon_tensor = self.vae.decode(torch.tensor(self.goal_latent).to(dtype=torch.float32).to(self.device).unsqueeze(0))
+                goal_recon_pil = transforms.ToPILImage()(goal_recon_tensor.squeeze().cpu())
+                self.goal_publisher.publish(ros_numpy.msgify(Image,cv2.rotate(np.array(goal_recon_pil),cv2.cv2.ROTATE_90_CLOCKWISE) ,'mono8'))
+                # if self.step_ % 10 == 0:
+                #     cv2.imwrite(os.path.join(IMAGE_PATH, "goal{}_rec.png".format(self.step_)), np.array(goal_recon_pil))
+        # cv2.imwrite(os.path.join(IMAGE_PATH, "{:0>5d}_c.png".format(self.step_)), recon.squeeze().cpu().numpy())
         return latent
 
 
     def get_obs_dict(self):
         obs = dict()
         # image
-        raw_image = rospy.wait_for_message("/some/channel/to/image", Image)
-        try:
-            object_image = self.bridge.imgmsg_to_cv2(raw_image, "passthrough")
-        except:
-            print("Error from ROS Image to CV2")
+        raw_image = None
+        while not raw_image:
+            raw_image = rospy.wait_for_message("/camera/color/image_raw", Image)
+        object_image = ros_numpy.numpify(raw_image)
 
         object_latent = self.get_visual_latent(object_image)
         goal_latent = self.goal_latent
         # gripper pos
-        obs["gripper_pos"] = self.get_gripper_pos()
+        obs["gripper_pos"] = self.gripper_pos.copy()
+        # print('gripper pos', self.gripper_pos.copy())
         obs["observation"] = np.concatenate([object_latent.copy(), obs["gripper_pos"].squeeze().copy()])
         obs["achieved_goal"] = np.concatenate([object_latent.copy(), ])
         obs["desired_goal"] = np.concatenate([goal_latent.copy()])
 
         return obs
 
-    def get_gripper_pos(self):
-        pose_tool = None
-        while (pose_tool is None):
-            try:
-                (trans_tool, rot_tool) = tf_listener.lookupTransform('world', 's_model_tool0', rospy.Time(0))
-            except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-                print("waiting for transform ....")
-                continue
-            pose_tool = np.asarray(trans_tool)[:3]
-            pose_toll[2] = 1.256
-
-        return pose_tool
-
     def step(self, action):
-        gripper_pos = self.get_gripper_pos()
-        clipped_action = self.clip_action(gripper_pos, action)
+        gripper_pos = self.gripper_pos.copy()
+        # clipped_action = self.clip_action(gripper_pos, action)
+        clipped_action = action
         # send clipped action to gripper
-        action_x = 0.1 * clipped_action[0]
-        action_y = 0.1 * clipped_action[1]
+        action_x = VELOCITY_SCALE * clipped_action[0]
+        action_y = VELOCITY_SCALE * clipped_action[1]
         vel_msg = geometry_msgs.msg.Vector3()
         vel_msg.x = action_x
         vel_msg.y = action_y
 
-        # now = rospy.Time.now()
-        # target_time = now + rospy.Duration(TIME_DURATION)
-        # print('start pushing step: ', step)
-        # while(rospy.Time.now() < target_time):
-        self.vel_pub.publish(vel_msg)
+        # self.vel_pub.publish(vel_msg)
 
-        # vel_msg.x = 0.0
-        # vel_msg.y = 0.0
-        # pub.publish(vel_msg)
-        print('finish pushing one step')
         obs = self.get_obs_dict()
+        self.step_ += 1
         return obs
 
 
@@ -195,9 +226,8 @@ def main():
         batch_size = args.batch_size,
     )
     # TODO load model
-    if args.load_weights:
-        print("loading model ...")
-        agent.load(WEIGHT_PATH, args.step, map_location='cuda:1')
+
+    agent.load(WEIGHT_PATH, args.step, map_location='cuda:1')
 
     # initialization env
     obs_dict = env.get_obs_dict()
@@ -216,6 +246,7 @@ def main():
             # update stats
             observation[:] = observation_new.copy()
             achieved_goal[:] = achieved_goal_new.copy()
+            # print('action: ', action)
 
 
 
