@@ -174,7 +174,7 @@ class VisualPushing:
 
     def get_gripper_cross(self, size):
         L = 0.63 # image length in real
-        x_start = 0.34
+        x_start = 0.3
         y_start = 0.44
         full = np.zeros((size, size, 3), np.uint8)
         full[:] = (0,0,255)
@@ -227,7 +227,7 @@ class VisualPushing:
         vel_msg.x = action_x
         vel_msg.y = action_y
 
-        # self.vel_pub.publish(vel_msg)
+        self.vel_pub.publish(vel_msg)
 
         obs = self.get_obs_dict()
         self.step_ += 1
