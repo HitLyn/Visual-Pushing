@@ -3,11 +3,11 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from scipy.ndimage.filters import gaussian_filter
 from IPython import embed
-
+from mpl_toolkits.mplot3d import Axes3D
 
 # object trajectory
-fig = plt.figure(figsize = (15, 10))
-ax1 = fig.add_subplot(131, title = 'object trajectory')
+fig = plt.figure(figsize = (10, 5))
+ax1 = fig.add_subplot(121, title = 'object trajectory')
 
 object_data = np.load('object_trajectory.npy')
 object_x = object_data[:, :, 1].reshape(-1)
@@ -20,7 +20,7 @@ heatmap1 = gaussian_filter(heatmap1, sigma = 2)
 ax1.imshow(heatmap1, extent = [xedges1[0], xedges1[-1], yedges1[0], yedges1[-1]], origin = 'lower', cmap = cm.jet)
 
 # pusher trajectory
-ax2 = fig.add_subplot(132, title = 'pusher trajectory')
+ax2 = fig.add_subplot(122, title = 'pusher trajectory')
 
 pusher_data = np.load('pusher_trajectory.npy')
 pusher_x = pusher_data[:, :, 1].reshape(-1)
@@ -33,13 +33,14 @@ heatmap2 = gaussian_filter(heatmap2, sigma = 2)
 ax2.imshow(heatmap2, extent = [xedges2[0], xedges2[-1], yedges2[0], yedges2[-1]], origin = 'lower', cmap = cm.jet)
 
 # goal error
-ax3 = fig.add_subplot(133, title = 'goal error')
-goal_data = np.load('goal.npy')
-goal_x = goal_data[:, 0].reshape(-1)
-goal_y = goal_data[:, 1].reshape(-1)
-goal_z = goal_data[:, 2].reshape(-1)
-
-
+# ax3 = fig.add_subplot(133, title = 'goal error', projection = '3d')
+# goal_data = np.load('goal.npy')
+# goal_x = goal_data[:, 0].reshape(-1)
+# goal_y = goal_data[:, 1].reshape(-1)
+# goal_z = goal_data[:, 2].reshape(-1)
+# fig2 = plt.figure()
+# ax = Axes3D(fig2)
+# ax.plot_trisurf(goal_x, goal_y, goal_z, cmap = cm.jet)
 
 
 plt.show()
