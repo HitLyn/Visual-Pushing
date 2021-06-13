@@ -1,6 +1,7 @@
 ## dataset
 images/
 results
+data/*.npy
 
 
 ## models

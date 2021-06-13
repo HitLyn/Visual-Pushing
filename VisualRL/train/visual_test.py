@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 from torch.utils.tensorboard import SummaryWriter
 import numpy as np
-from IPython import embed
 import argparse
 import os
 import time
@@ -16,7 +15,7 @@ from robogym.envs.push.visual_pushing import make_env
 # from robogym.envs.push.push_env import make_env
 import gym
 
-from mujoco_py import GlfwContext
+# from mujoco_py import GlfwContext
 # GlfwContext(offscreen=True)  # Create a window to init GLFW
 # weights can be used:
 # /homeL/cong/HitLyn/Visual-Pushing/log_files/her/04_26-14_39/her_models, step 46700, vae:/homeL/cong/HitLyn/Visual-Pushing/results/vae/4/vae_model step = 100, latent_space:4, only 1 object
@@ -54,6 +53,9 @@ args.load_weights = 1
 
 WEIGHT_PATH = "/homeL/cong/HitLyn/Visual-Pushing/log_files/her/04_30-14_25/her_models"
 ACTION_SCALE = 0.5
+N = 1000
+
+EPISODE_STEP = 30
 def main():
     observation_space = args.obs_size
     action_space = args.action_size
@@ -101,10 +103,19 @@ def main():
     # test
     episode = 0
     success_stats = []
-    video_bottom = cv2.VideoWriter('/homeL/cong/Videos/push/saved/all_objects/bottom_step51000_flip.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 10, (720, 720), True)
-    video_front = cv2.VideoWriter('/homeL/cong/Videos/push/saved/all_objects/front_step51000_flip.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 10, (720, 720), True)
+    # video record
+    # video_bottom = cv2.VideoWriter('/homeL/cong/Videos/push/saved/all_objects/bottom_step51000_flip.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 10, (720, 720), True)
+    # video_front = cv2.VideoWriter('/homeL/cong/Videos/push/saved/all_objects/front_step51000_flip.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 10, (720, 720), True)
 
-    while episode < 10:
+
+    # data record
+    # pusher trajectory, object trajectory, goal position (x,y,error)
+    trajectory_pusher_record = np.zeros([N, EPISODE_STEP, 2])
+    trajectory_object_record = np.zeros([N, EPISODE_STEP, 2])
+    goal_pos_record = np.zeros([N, 3])
+
+
+    while episode < N:
         obs_dict = env.reset()
         start_time = time.time()
         observation = np.empty(agent.dims['buffer_obs_size'], np.float32)
@@ -119,7 +130,7 @@ def main():
 
         obs, a_goals, acts, d_goals, successes, dones = [], [], [], [], [], []
         with torch.no_grad():
-            for t in range(30):
+            for t in range(EPISODE_STEP):
                 observation_new = np.empty(agent.dims['buffer_obs_size'], np.float32)
                 achieved_goal_new = np.empty(agent.dims['goal'], np.float32)
                 # step env
@@ -134,28 +145,37 @@ def main():
                 # update states
                 observation[:] = observation_new.copy()
                 achieved_goal[:] = achieved_goal_new.copy()
-                bottom_frame = env.sim.render(width = 720, height = 720, camera_name = 'phys_checks_cam')
-                bottom_frame = cv2.flip(cv2.cvtColor(bottom_frame, cv2.COLOR_BGR2RGB),0)
-                # bottom_frame = cv2.cvtColor(bottom_frame, cv2.COLOR_BGR2RGB)
-                front_frame = env.sim.render(width = 720, height = 720, camera_name = 'vision_cam_front')
-                front_frame = cv2.flip(cv2.cvtColor(front_frame, cv2.COLOR_BGR2RGB), 0)
+                # bottom_frame = env.sim.render(width = 720, height = 720, camera_name = 'phys_checks_cam')
+                # bottom_frame = cv2.flip(cv2.cvtColor(bottom_frame, cv2.COLOR_BGR2RGB),0)
+                # # bottom_frame = cv2.cvtColor(bottom_frame, cv2.COLOR_BGR2RGB)
+                # front_frame = env.sim.render(width = 720, height = 720, camera_name = 'vision_cam_front')
+                # front_frame = cv2.flip(cv2.cvtColor(front_frame, cv2.COLOR_BGR2RGB), 0)
                 # front_frame = cv2.cvtColor(front_frame, cv2.COLOR_BGR2RGB)
-                video_bottom.write(bottom_frame)
-                video_front.write(front_frame)
+                # video_bottom.write(bottom_frame)
+                # video_front.write(front_frame)
 
                 # with env.mujoco_simulation.hide_robot():
                     # env.render()
                     # with env.mujoco_simulation.hide_target():
                     #     array = env.render(mode="rgb_array")
                         # plt.imsave(name, array, format='png')
+                trajectory_pusher_record[episode, t] = obs_dict_new["gripper_pos"].squeeze()[:2]
+                trajectory_object_record[episode, t] = obs_dict_new["achieved_goal_gt"][:2]
 
-            episode += 1
+            goal_pos_record[episode, :2] = obs_dict["desired_goal_gt"][:2]
+            goal_pos_record[episode, 2] = np.linalg.norm(obs_dict_new["achieved_goal_gt"][:2] - obs_dict["desired_goal_gt"][:2])
             # exit()
+            episode += 1
+            print("episode: ", episode)
+
 
             # add transition to replay buffer
             # env.close()
-    video_bottom.release()
-    video_front.release()
+    # video_bottom.release()
+    # video_front.release()
+    np.save('../../data/pusher_trajectory', trajectory_pusher_record)
+    np.save('../../data/object_trajectory', trajectory_object_record)
+    np.save('../../data/goal', goal_pos_record)
 
 if __name__ == '__main__':
     main()
