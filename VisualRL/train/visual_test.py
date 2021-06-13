@@ -101,10 +101,10 @@ def main():
     # test
     episode = 0
     success_stats = []
-    video_bottom = cv2.VideoWriter('/homeL/cong/Videos/push/saved/all_objects/bottom_step51000_1.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 10, (720, 720), True)
-    video_front = cv2.VideoWriter('/homeL/cong/Videos/push/saved/all_objects/front_step51000_1.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 10, (720, 720), True)
+    video_bottom = cv2.VideoWriter('/homeL/cong/Videos/push/saved/all_objects/bottom_step51000_flip.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 10, (720, 720), True)
+    video_front = cv2.VideoWriter('/homeL/cong/Videos/push/saved/all_objects/front_step51000_flip.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 10, (720, 720), True)
 
-    while episode < 100:
+    while episode < 10:
         obs_dict = env.reset()
         start_time = time.time()
         observation = np.empty(agent.dims['buffer_obs_size'], np.float32)
@@ -135,10 +135,11 @@ def main():
                 observation[:] = observation_new.copy()
                 achieved_goal[:] = achieved_goal_new.copy()
                 bottom_frame = env.sim.render(width = 720, height = 720, camera_name = 'phys_checks_cam')
-                bottom_frame = cv2.cvtColor(bottom_frame, cv2.COLOR_BGR2RGB)
+                bottom_frame = cv2.flip(cv2.cvtColor(bottom_frame, cv2.COLOR_BGR2RGB),0)
+                # bottom_frame = cv2.cvtColor(bottom_frame, cv2.COLOR_BGR2RGB)
                 front_frame = env.sim.render(width = 720, height = 720, camera_name = 'vision_cam_front')
                 front_frame = cv2.flip(cv2.cvtColor(front_frame, cv2.COLOR_BGR2RGB), 0)
-                # env.render()
+                # front_frame = cv2.cvtColor(front_frame, cv2.COLOR_BGR2RGB)
                 video_bottom.write(bottom_frame)
                 video_front.write(front_frame)
 

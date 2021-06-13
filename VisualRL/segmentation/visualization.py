@@ -17,7 +17,7 @@ CHOSEN_FEATURES = 10
 device = torch.device('cuda:1')
 # global model
 model = VAE(device = device, image_channels = 1, h_dim = 1024, z_dim = 4)
-model.load("/homeL/cong/HitLyn/Visual-Pushing/results/vae/04_30-13_51/vae_model", 80, map_location='cuda:1')
+model.load("/homeL/cong/HitLyn/Visual-Pushing/results/vae/04_30-13_51/vae_model", 100, map_location='cuda:1')
 
 random_id = 1
 
