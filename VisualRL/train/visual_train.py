@@ -18,10 +18,10 @@ GlfwContext(offscreen=True)  # Create a window to init GLFW
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--task_name", default="YCB-Pushing")
-parser.add_argument("--obs_size", default = 11, type = int)# obj_pos_features n + gripper pos 3 + goal_features n
+parser.add_argument("--obs_size", default = 15, type = int)# obj_pos_features n + gripper pos 3 + goal_features n
 parser.add_argument("--action_size", default = 2, type = int)
 parser.add_argument("--feature_dims", default = 128, type = int)
-parser.add_argument("--goal_size", default = 4, type = int)#goal_features n
+parser.add_argument("--goal_size", default = 6, type = int)#goal_features n
 parser.add_argument("--device", default="auto", type = str)
 parser.add_argument("--net_class", default="Flatten", type = str)
 parser.add_argument("--min_action", default = -1., type = float)
