@@ -52,10 +52,10 @@ args = parser.parse_args()
 args.load_weights = 1
 
 WEIGHT_PATH = "/homeL/cong/HitLyn/Visual-Pushing/log_files/her/04_30-14_25/her_models"
-ACTION_SCALE = 0.5
-N = 1000
+ACTION_SCALE = 0.25
+N = 5
 
-EPISODE_STEP = 30
+EPISODE_STEP = 40
 def main():
     observation_space = args.obs_size
     action_space = args.action_size
@@ -104,8 +104,8 @@ def main():
     episode = 0
     success_stats = []
     # video record
-    # video_bottom = cv2.VideoWriter('/homeL/cong/Videos/push/saved/all_objects/bottom_step51000_flip.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 10, (720, 720), True)
-    # video_front = cv2.VideoWriter('/homeL/cong/Videos/push/saved/all_objects/front_step51000_flip.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 10, (720, 720), True)
+    video_bottom = cv2.VideoWriter('/homeL/cong/Videos/push/saved/new_friction/bottom_f05.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 10, (720, 720), True)
+    video_front = cv2.VideoWriter('/homeL/cong/Videos/push/saved/new_friction/front_f05.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 10, (720, 720), True)
 
 
     # data record
@@ -145,14 +145,14 @@ def main():
                 # update states
                 observation[:] = observation_new.copy()
                 achieved_goal[:] = achieved_goal_new.copy()
-                # bottom_frame = env.sim.render(width = 720, height = 720, camera_name = 'phys_checks_cam')
-                # bottom_frame = cv2.flip(cv2.cvtColor(bottom_frame, cv2.COLOR_BGR2RGB),0)
-                # # bottom_frame = cv2.cvtColor(bottom_frame, cv2.COLOR_BGR2RGB)
-                # front_frame = env.sim.render(width = 720, height = 720, camera_name = 'vision_cam_front')
-                # front_frame = cv2.flip(cv2.cvtColor(front_frame, cv2.COLOR_BGR2RGB), 0)
+                bottom_frame = env.sim.render(width = 720, height = 720, camera_name = 'phys_checks_cam')
+                bottom_frame = cv2.flip(cv2.cvtColor(bottom_frame, cv2.COLOR_BGR2RGB),0)
+                # bottom_frame = cv2.cvtColor(bottom_frame, cv2.COLOR_BGR2RGB)
+                front_frame = env.sim.render(width = 720, height = 720, camera_name = 'vision_cam_front')
+                front_frame = cv2.flip(cv2.cvtColor(front_frame, cv2.COLOR_BGR2RGB), 0)
                 # front_frame = cv2.cvtColor(front_frame, cv2.COLOR_BGR2RGB)
-                # video_bottom.write(bottom_frame)
-                # video_front.write(front_frame)
+                video_bottom.write(bottom_frame)
+                video_front.write(front_frame)
 
                 # with env.mujoco_simulation.hide_robot():
                     # env.render()
@@ -171,11 +171,11 @@ def main():
 
             # add transition to replay buffer
             # env.close()
-    # video_bottom.release()
-    # video_front.release()
-    np.save('../../data/pusher_trajectory', trajectory_pusher_record)
-    np.save('../../data/object_trajectory', trajectory_object_record)
-    np.save('../../data/goal', goal_pos_record)
+    video_bottom.release()
+    video_front.release()
+    # np.save('../../data/pusher_trajectory_', trajectory_pusher_record)
+    # np.save('../../data/object_trajectory_', trajectory_object_record)
+    # np.save('../../data/goal', goal_pos_record)
 
 if __name__ == '__main__':
     main()

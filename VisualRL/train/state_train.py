@@ -41,6 +41,7 @@ parser.add_argument("--use_ground_truth_reward", action = "store_false")
 parser.add_argument("--load_weights", action = "store_true")
 parser.add_argument("--mp", action = "store_true")
 parser.add_argument("--seed", default = None, type = int)
+parser.add_argument("--order", default = 0, type = int)
 args = parser.parse_args()
 
 
@@ -116,7 +117,7 @@ def main():
     device = get_device(args.device)
     # save dir
     save_dir = os.path.join(os.environ["VISUAL_PUSHING_HOME"], "log_files/her")
-    train_name = time.strftime("%m_%d-%H_%M", time.gmtime())
+    train_name = time.strftime("%m_%d-%H_%M", time.gmtime()) + 'Order' + str(args.order)
     os.makedirs(os.path.join(save_dir, train_name), exist_ok=True)
     save_path = os.path.join(save_dir, train_name)
     model_path = os.path.join(save_path, 'her_models')
