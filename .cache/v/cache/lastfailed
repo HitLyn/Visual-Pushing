@@ -1,0 +1,7 @@
+{
+  "VisualRL/rllib/her/her_replay_buffer_test.py": true, 
+  "VisualRL/train/gym_test.py": true, 
+  "VisualRL/train/reach_test.py": true, 
+  "VisualRL/train/visual_test.py": true, 
+  "VisualRL/train/visual_train.py": true
+}
