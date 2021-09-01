@@ -16,7 +16,7 @@ from VisualRL.rllib.common.utils import polyak_update
 
 # from robogym.envs.push.push_a3 import make_env
 
-ACTION_SCALE = 0.5
+ACTION_SCALE = 0.4
 class HER:
     def __init__(
             self,
@@ -457,11 +457,12 @@ class HER:
         self._n_updates += gradient_steps
         # update learning rate
         schedulers = [self.actor_scheduler, self.critic_scheduler, self.ent_scheduler]
-        self._update_learning_rate(schedulers)
+        # self._update_learning_rate(schedulers)
         # TODO write summary to logger here
         writer.add_scalar("train/ent_coef", np.mean(ent_coefs), self._n_updates)
         writer.add_scalar("train/actor_loss", np.mean(actor_losses), self._n_updates)
         writer.add_scalar("train/critic_loss", np.mean(critic_losses), self._n_updates)
+        writer.add_scalar("train/learning_rate", np.array(self.actor_scheduler.get_last_lr()), self._n_updates)
         if len(ent_coef_losses) > 0:
             writer.add_scalar("train/ent_coef_loss", np.mean(ent_coef_losses), self._n_updates)
 

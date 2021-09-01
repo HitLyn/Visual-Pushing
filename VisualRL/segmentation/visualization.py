@@ -9,15 +9,15 @@ from torchvision import transforms
 from IPython import embed
 import matplotlib.pyplot as plt
 
-IMAGE_PATH = "/homeL/cong/HitLyn/Visual-Pushing/images/all_objects_masks"
-SAVE_PATH = "/homeL/cong/HitLyn/Visual-Pushing/images/save_from_visualization"
+IMAGE_PATH = "/homeL/cong/HitLyn/Visual-Pushing/images/all_objects_masks_random"
+SAVE_PATH = "/homeL/cong/HitLyn/Visual-Pushing/images/save_from_visualization_new"
 SCALE_RANGE = 6
 CHOSEN_FEATURES = 10
 
 device = torch.device('cuda:1')
 # global model
-model = VAE(device = device, image_channels = 1, h_dim = 1024, z_dim = 4)
-model.load("/homeL/cong/HitLyn/Visual-Pushing/results/vae/04_30-13_51/vae_model", 100, map_location='cuda:1')
+model = VAE(device = device, image_channels = 1, h_dim = 1024, z_dim = 6)
+model.load("/homeL/cong/HitLyn/Visual-Pushing/results/vae/6_new/vae_model", 100, map_location='cuda:1')
 
 random_id = 1
 

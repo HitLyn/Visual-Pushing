@@ -14,7 +14,7 @@ from VisualRL.vae.model import VAE
 from VisualRL.vae.dataset import VaeImageDataset
 
 
-DATA_SET_PATH = os.path.join(os.environ["VISUAL_PUSHING_HOME"], "images/all_objects_masks")
+DATA_SET_PATH = os.path.join(os.environ["VISUAL_PUSHING_HOME"], "images/all_objects_masks_random")
 RESULTS_SAVE_PATH = os.path.join(os.environ["VISUAL_PUSHING_HOME"], "results/vae")
 
 parser = argparse.ArgumentParser()
@@ -46,7 +46,7 @@ def main():
     test_loader = torch.utils.data.DataLoader(test_dataset, batch_size = args.batch_size, shuffle = True, pin_memory = False, num_workers = 2)
     print('\nall data loader! \n')
     # load model
-    model = VAE(device = device, image_channels = 1, h_dim = 1024, z_dim = 4)
+    model = VAE(device = device, image_channels = 1, h_dim = 1024, z_dim = 6)
     optimizer = optim.Adam(model.parameters(), lr = 0.0003)
     criterion = nn.MSELoss()
 

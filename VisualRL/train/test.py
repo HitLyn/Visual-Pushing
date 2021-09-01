@@ -13,11 +13,11 @@ from VisualRL.rllib.common.utils import get_device, set_seed_everywhere
 
 from robogym.envs.push.push_env import make_env
 import gym
-
+import cv2
 from mujoco_py import GlfwContext
 import matplotlib.pyplot as plt
 
-GlfwContext(offscreen=True)  # Create a window to init GLFW.
+# GlfwContext(offscreen=True)  # Create a window to init GLFW.
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--task_name", default="YCB-Pushing")
@@ -96,7 +96,9 @@ def main():
     # test
     episode = 0
     success_stats = []
-    while episode < 1000:
+    video = cv2.VideoWriter('/homeL/cong/Videos/push/saved/oracle/more_object.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 10, (720, 720), True)
+
+    while episode < 40:
         obs_dict = env.reset()
         start_time = time.time()
         observation = np.empty(agent.dims['buffer_obs_size'], np.float32)
@@ -111,7 +113,7 @@ def main():
 
         obs, a_goals, acts, d_goals, successes, dones = [], [], [], [], [], []
         with torch.no_grad():
-            for t in range(20):
+            for t in range(30):
                 # embed();exit()
                 name = '/homeL/cong/HitLyn/Visual-Pushing/images/only_objects/' + "{:0>5d}.png".format(20 * episode + t)
 
@@ -122,7 +124,7 @@ def main():
                 # step env
                 action = agent._select_action(observation, achieved_goal,
                                              desired_goal)  # action is squashed to [-1, 1] by tanh function
-                print(f"action: {t}")
+                # print(f"action: {t}")
                 obs_dict_new, reward, done, _ = env.step(ACTION_SCALE * action)
                 observation_new[:] = obs_dict_new['observation']
                 achieved_goal_new[:] = obs_dict_new['achieved_goal']
@@ -131,15 +133,22 @@ def main():
                 # update states
                 observation[:] = observation_new.copy()
                 achieved_goal[:] = achieved_goal_new.copy()
-                with env.mujoco_simulation.hide_robot():
-                    # env.render()
-                    with env.mujoco_simulation.hide_target():
-                        array = env.render(mode="rgb_array")
-                        plt.imsave(name, array, format='png')
+                # with env.mujoco_simulation.hide_robot():
+                # env.render()
+                    # with env.mujoco_simulation.hide_target():
+                    #     array = env.render(mode="rgb_array")
+                    #     plt.imsave(name, array, format='png')
+                with env.mujoco_simulation.turn_targets_blue():
+                # bottom_frame = cv2.cvtColor(bottom_frame, cv2.COLOR_BGR2RGB)
+                    front_frame = env.sim.render(width = 720, height = 720, camera_name = 'vision_cam_front')
+                    front_frame = cv2.flip(cv2.cvtColor(front_frame, cv2.COLOR_BGR2RGB), 0)
+                # front_frame = cv2.cvtColor(front_frame, cv2.COLOR_BGR2RGB)
+                video.write(front_frame)
 
             episode += 1
             # add transition to replay buffer
-            # env.close()
+            # env.close()\
+    video.release()
 
 if __name__ == '__main__':
     main()

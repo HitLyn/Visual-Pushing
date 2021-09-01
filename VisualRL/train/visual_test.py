@@ -13,6 +13,7 @@ from VisualRL.rllib.common.utils import get_device, set_seed_everywhere
 
 from robogym.envs.push.visual_pushing import make_env
 # from robogym.envs.push.push_env import make_env
+# from robogym.envs.push.push_env import make_env
 import gym
 
 # from mujoco_py import GlfwContext
@@ -52,8 +53,9 @@ args = parser.parse_args()
 args.load_weights = 1
 
 WEIGHT_PATH = "/homeL/cong/HitLyn/Visual-Pushing/log_files/her/04_30-14_25/her_models"
-ACTION_SCALE = 0.25
-N = 5
+# WEIGHT_PATH = "/homeL/cong/HitLyn/Visual-Pushing/log_files/her/07_05-08_40Order1/her_models"
+ACTION_SCALE = 0.4
+N = 50
 
 EPISODE_STEP = 40
 def main():
@@ -104,8 +106,8 @@ def main():
     episode = 0
     success_stats = []
     # video record
-    video_bottom = cv2.VideoWriter('/homeL/cong/Videos/push/saved/new_friction/bottom_f05.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 10, (720, 720), True)
-    video_front = cv2.VideoWriter('/homeL/cong/Videos/push/saved/new_friction/front_f05.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 10, (720, 720), True)
+    video_bottom = cv2.VideoWriter('/homeL/cong/Videos/push/saved/new_model/bottom_f04_2.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 10, (720, 720), True)
+    video_front = cv2.VideoWriter('/homeL/cong/Videos/push/saved/new_model/front_f04_2.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 10, (720, 720), True)
 
 
     # data record
@@ -145,11 +147,12 @@ def main():
                 # update states
                 observation[:] = observation_new.copy()
                 achieved_goal[:] = achieved_goal_new.copy()
-                bottom_frame = env.sim.render(width = 720, height = 720, camera_name = 'phys_checks_cam')
-                bottom_frame = cv2.flip(cv2.cvtColor(bottom_frame, cv2.COLOR_BGR2RGB),0)
+                with env.mujoco_simulation.turn_targets_blue():
+                    bottom_frame = env.sim.render(width = 720, height = 720, camera_name = 'phys_checks_cam')
+                    bottom_frame = cv2.flip(cv2.cvtColor(bottom_frame, cv2.COLOR_BGR2RGB),0)
                 # bottom_frame = cv2.cvtColor(bottom_frame, cv2.COLOR_BGR2RGB)
-                front_frame = env.sim.render(width = 720, height = 720, camera_name = 'vision_cam_front')
-                front_frame = cv2.flip(cv2.cvtColor(front_frame, cv2.COLOR_BGR2RGB), 0)
+                    front_frame = env.sim.render(width = 720, height = 720, camera_name = 'vision_cam_front')
+                    front_frame = cv2.flip(cv2.cvtColor(front_frame, cv2.COLOR_BGR2RGB), 0)
                 # front_frame = cv2.cvtColor(front_frame, cv2.COLOR_BGR2RGB)
                 video_bottom.write(bottom_frame)
                 video_front.write(front_frame)

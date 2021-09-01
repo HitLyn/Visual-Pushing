@@ -72,16 +72,16 @@ if __name__ == "__main__":
     df2 = get_data_frame(df_list, [1,2,8])
     df3 = get_data_frame(df_list, [3,5,6])
 
-    fig = plt.figure(figsize=(32, 8))
+    fig = plt.figure(figsize=(15, 30))
     # 1
-    ax1 = plt.subplot2grid((4, 18), (0, 0), colspan=6, rowspan=4)
+    ax1 = plt.subplot2grid((18, 8), (0, 0), colspan=8, rowspan=5)
     # ax1 = plt.subplot(1,3,1)
     sns.lineplot(data=df1, x="step", y="average_success_rate", hue='tag')
     # ax1.set(xlabel = None, ylabel = 'Success rate')
     # ax1.xaxis.set_visible(False)
     ax1.set_xlabel('Steps (M)', fontsize=28)
     ax1.set_ylabel('Success rate', fontsize=28)
-    ax1.set_title('Latent Space Dimension', fontdict={'fontsize': 35, 'fontweight': "medium"}, pad=5.0)
+    ax1.set_title('Latent Space Dimension', fontdict={'fontsize': 30, 'fontweight': "medium"}, pad=5.0)
     ax1.set_xlim(0, 2.5)
     ax1.set_ylim(0, 1)
     # ax1.set_xticks([])
@@ -91,10 +91,10 @@ if __name__ == "__main__":
     ax1.legend(frameon=False, loc='upper left', ncol=1, prop={'size': 28})
 
     # # 2
-    ax2 = plt.subplot2grid((4, 18), (0, 6), colspan=6, rowspan=4)
+    ax2 = plt.subplot2grid((18, 8), (6, 0), colspan=8, rowspan=5)
     # ax2 = plt.subplot(1, 3, 2)
     sns.lineplot(data=df2, x="step", y="average_success_rate", hue='tag')
-    ax2.set_title('Reward Type', fontdict={'fontsize': 35, 'fontweight': "medium"}, pad=1.0)
+    ax2.set_title('Reward Type', fontdict={'fontsize': 30, 'fontweight': "medium"}, pad=1.0)
     # ax2.set(xlabel = None, ylabel = 'Success rate')
     ax2.set_ylabel('Success rate', fontsize=28)
     ax2.set_xlabel('Steps (M)', fontsize=28)
@@ -107,10 +107,10 @@ if __name__ == "__main__":
     ax2.legend(frameon=False, loc='upper left', ncol=1, prop={'size': 28})
     #
     # # 3
-    ax3 = plt.subplot2grid((4, 18), (0, 12), colspan=6, rowspan=4)
+    ax3 = plt.subplot2grid((18, 8), (12, 0), colspan=8, rowspan=5)
     # ax3 = plt.subplot(1, 3, 3)
     sns.lineplot(data=df3, x="step", y="average_success_rate", hue='tag')
-    ax3.set_title('Input Modality', fontdict={'fontsize': 35, 'fontweight': "medium"}, pad=1.0)
+    ax3.set_title('Input Modality', fontdict={'fontsize': 30, 'fontweight': "medium"}, pad=1.0)
     # ax3.set(xlabel = 'Eipsodes', ylabel = 'Success rate', fontsize = 12)
     ax3.set_xlabel('Steps (M)', fontsize=28)
     ax3.set_ylabel('Success rate', fontsize=28)
@@ -123,5 +123,6 @@ if __name__ == "__main__":
     # #
 
     plt.tight_layout(pad=1, h_pad=5.0)
-    plt.savefig('curve.pdf')
+    plt.savefig('curve_vertival.pdf')
+    plt.savefig('curve_vertival.png')
     # plt.show()
