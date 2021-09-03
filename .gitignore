@@ -9,6 +9,7 @@ data/
 saved_model/
 
 ## logs
+.vscode
 .idea/
 log_files
 
