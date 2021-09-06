@@ -67,7 +67,6 @@ def main():
     max_action = args.max_action
     max_episode_steps = args.max_episode_steps
     train_freq = args.train_freq
-    # embed();exit()
     train_cycle = args.train_cycle
 
     device = get_device(args.device)
@@ -80,13 +79,13 @@ def main():
         observation_space,
         action_space,
         goal_space,
-        env,
         feature_dims,
         min_action,
         max_action,
         max_episode_steps,
         train_freq,
         train_cycle,
+        env = env,
         net_class = args.net_class,
         gradient_steps=args.gradient_steps,
         save_interval = args.save_interval,
